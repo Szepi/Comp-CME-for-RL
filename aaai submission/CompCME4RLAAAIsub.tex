@@ -22,21 +22,21 @@
 
 %% we are allowed to "minimally" make these spacing changes
 
-\setlength\abovecaptionskip{1mm}
-\setlength\belowcaptionskip{1mm}
-\setlength\abovedisplayskip{1mm}
-\setlength\belowdisplayskip{1mm}
-%\setlength\floatsep{1mm}
-%\setlength\textfloatsep{1mm}
+\setlength\abovecaptionskip{0mm}
+\setlength\belowcaptionskip{0mm}
+\setlength\abovedisplayskip{0mm}
+\setlength\belowdisplayskip{0mm}
+\setlength\floatsep{0mm}
+\setlength\textfloatsep{0mm}
 
 %% Csaba's commands
 %\usepackage[backgroundcolor = White]{todonotes}
-\usepackage{todonotes}
+\usepackage[disable]{todonotes}  %turn notes on/off with \usepackage[disable]{todonotes} 
 % todo by Csaba
 \newcommand{\todoc}[2][]{\todo[color=red!20!white,size=\tiny,#1]{#2}}
 % todo by Guy
 \newcommand{\todog}[2][]{\todo[inline,color=orange!20!white,size=\tiny#1]{#2}}
-\setlength{\marginparwidth}{10ex}
+%\setlength{\marginparwidth}{10ex}
 \usepackage{paralist}
 
 %% Guys' commands
@@ -159,11 +159,12 @@
 \newcommand{\rang}{\rangle}
 \newcommand{\nn}{\nonumber}
 \newcommand{\reg}{\operatornamewithlimits{reg}}
-\newcommand{\bzero }{{\bm 0}}
+\newcommand{\bzero}{{\bm 0}}
+\newcommand{\bone}{{\bm 1}}
 
 
 
- \begin{document}
+\begin{document}
 % The file aaai.sty is the style file for AAAI Press 
 % proceedings, working notes, and technical reports.
 %
@@ -182,22 +183,18 @@ We begin by presenting a unified view of existing algorithms in this class. Two 
 
 \section{Introduction}
 
-Several methods have been proposed for model-based reinforcement learning which, due to the particular form of the model, induce a finite (pseudo-)MDP\footnote{These are MDP-like objects which relax the potential set of transition functions from the set of probability measures to the set of signed measures. See Section~\ref{InducedMDP}.} which approximates the MDP, such that solving the induced (pseudo-)MDP delivers a good policy for the true MDP \citep{\OrmoneitKBRL,\GrunewalderEmbeddingsRL,\CsabaFLAM}. In these methods the learned `model' can be viewed as a ``conditional mean embedding'' (CME) of the MDP transition dynamics in a chosen feature space. We review this family of methods in Section~\ref{CMEsforRL}.
+Several methods have been proposed for model-based reinforcement learning which, due to the particular form of the model, induce a finite (pseudo-)MDP\footnote{Pseudo-MDPs relax the potential transition functions from the set of probability measures to signed measures. See Section~\ref{InducedMDP}.} which approximates the MDP, such that solving the induced (pseudo-)MDP delivers a good policy for the true MDP \citep{\OrmoneitKBRL,\GrunewalderEmbeddingsRL,\CsabaFLAM}. In these methods the learned `model' can be viewed as a ``conditional mean embedding'' (CME) of the MDP transition dynamics in a chosen feature space. We review this family of methods in Section~\ref{CMEsforRL}.
 
 In general the approach has the following potentially useful properties: 
 \begin{inparaenum}[\itshape a\upshape)]
-\item The induced finite (pseudo-)MDP can be solved exactly (i.e. a solution to the Bellman optimality equation can be obtained in finite time), \todoc{In pseudo-MDPs optimal policies are not really well-defined.}
-avoiding typical problems associated with approximate dynamic programming, such as policy oscillation \cite[e.g.][]{\BertsekasApproximate}. As a result, planning is guaranteed to succeed;
-\todoc{Was: ``Planning is stable in practice;'' How about ``in theory''? Confusing..}
-\item Guarantees on the value of the learned policy exist: e.g. consistency in the large data limit for the algorithm of \citet{\OrmoneitKBRL} under mild smoothness assumptions \todoc{no guarantees without assumptions!} or bounds on the value of the policy learned in terms of the error of the CME \citep{\GrunewalderEmbeddingsRL,\CsabaFLAM}. 
-\item Value functions can be represented in rich reproducing kernel Hilbert space (RKHS) without explicitly constructing feature vectors, which themselves can be infinite dimensional. Further, we do not need to model the value function directly \todoc{But the algorithm DOES compute a value function! Take this out?} (i.e. find a weight vector). 
-To some extent we avoid the problem of a-priori defining a good compact representation architecture for value functions $V$; 
-\todoc{This is not because of the RKHS approach but because model learning is a supervised learning problem. I would make this clear.}
+\item The induced finite approximate Bellman optimality equation can be solved exactly in finite time,\todoc{In pseudo-MDPs optimal policies are not really well-defined.}\todog{yes - fixed.}
+avoiding instability associated with approximate dynamic programming \cite[e.g.][]{\BertsekasApproximate}. As a result, planning is guaranteed to succeed.
+\item Guarantees on the value of the learned policy exist: e.g. consistency in the large data limit for the algorithm of \citet{\OrmoneitKBRL} under mild smoothness assumptions or bounds on the value of the policy learned in terms of the error of the CME \citep{\GrunewalderEmbeddingsRL,\CsabaFLAM}. 
+\item By reducing model learning to a supervised learning problem, to some extent the problem of a-priori defining a good compact representation architecture for value functions is avoided.\todoc{This is not because of the RKHS approach but because model learning is a supervised learning problem. I would make this clear.}\todog{yes - fixed.} Here, value functions can be represented in rich reproducing kernel Hilbert space (RKHS) without explicitly constructing feature vectors.\todoc{But the algorithm DOES compute a value function! Take this out?}\todog{Yes OK its a bit confusing. I mention this later so have just removed it here. OK?} 
 \item The approach can be data-efficient since state-of-the-art non-parametric approaches can be used to approximate the CME from few data points.
 \end{inparaenum}
 
-One drawback is the fact that the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, putting much strain on the algorithm's memory requirements, and also significantly slowing down the planning step as more data is collected. Further, \citet{\GrunewalderEmbeddingsRL} employ non-parametric methods to learn the CME which are data efficient but computationally expensive. \todoc{Did not this paper also talk about using sparsification techniques?}
-It is therefore of interest to investigate methods for learning CMEs in RL which retain these benefits but enable efficient planning and which can be learned efficiently even for problems that require huge amounts of data to learn a good model. In this work we present a method of learning a \emph{compressed CME} which induces a compressed finite pseudo-MDP for efficient planning, decoupling the size of data collected and the size of the induced pseudo-MDP. We optimize the CME non-parametrically but efficiently, using kernel matching pursuit.
+One drawback is the fact that the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, putting much strain on the algorithm's memory requirements, and also significantly slowing down the planning step as more data is collected. Further, \citet{\GrunewalderEmbeddingsRL} employ non-parametric methods to learn the CME which are data efficient but computationally expensive. \todoc{Did not this paper also talk about using sparsification techniques?}\todog{Yes, I'll try to fit a discussion of this in but because of space we may have to only mention this if reviewers bring it up.} It is therefore of interest to investigate methods for learning CMEs in RL which retain these benefits but enable efficient planning and which can be learned efficiently even for problems that require huge amounts of data to learn a good model. In this work we present a method of learning a \emph{compressed CME} which induces a compressed finite pseudo-MDP for efficient planning, decoupling the size of data collected and the size of the induced pseudo-MDP. We optimize the CME non-parametrically but efficiently, using kernel matching pursuit.
 
 \section{Preliminaries}
 
@@ -211,9 +208,7 @@ an \emph{(immediate) reward function} $r: \cS \times \cA \to [0,1]$,
 and a stationary \emph{Markov transition kernel} $(P(s' |s,a))_{(s,a,s')\in \cS \times \cA \times \cS}$. 
 These, together with a (stationary, stochastic, Markov) policy $\pi: \cS \to \cP(\cA)$, a map from the state space to the set of distributions over the action space, gives rise to a controlled Markov chain $\xi=(S_1,A_1,S_2,A_2,\dots)$ where $S_1 \sim P_1$, $A_t \sim \pi(S_t)$ and $S_{t+1} \sim p(\cdot|S_t,A_t)$, i.e., $p$ determines the stochastic dynamics of the controlled process.
 % $P(S_{t+1}|S_i=s_i, A_i=a_i ,\forall i\le t) = P(S_{t+1} |S_t=s_t,A_t=a_t)$; a (potentially stochastic) \emph{reward function} $R:\cS\times\cA\to \R$. We denote the mean of the reward function by $r(s,a) = \E [R(s,a)]$, and use the shorthand $P(S_{t+1} |s_t,a_t) = P(S_{t+1} |S_t=s_t,A_t=a_t) $ and 
-Generally, we will denote the successor state of $s$ by $s'$. 
-%Given an MDP, an \emph{agent} controls a \emph{trajectory} $\xi = (s_1,a_1,s_2,a_2,...)$ through $\cS\times\cA$ by sequentially selecting the actions $a_t\in\cA$ at each time step according to a stationary \emph{policy} $\pi:\cS\to\cP(\cA)$, where $\cP(\cA)$ is the set of probability distributions on $\cA$. 
-We denote the discounted stationary distribution of state-actions when following a policy $\pi$ by $\rho^\pi = (1-\gamma)\sum_{t=1}^\infty \gamma^{t-1}  \rho_t^\pi$ where $\rho_t^\pi$ is the state-action distribution at time $t$ when following $\pi$. 
+Generally, we will denote the successor state of $s$ by $s'$. %Given an MDP, an \emph{agent} controls a \emph{trajectory} $\xi = (s_1,a_1,s_2,a_2,...)$ through $\cS\times\cA$ by sequentially selecting the actions $a_t\in\cA$ at each time step according to a stationary \emph{policy} $\pi:\cS\to\cP(\cA)$, where $\cP(\cA)$ is the set of probability distributions on $\cA$. 
 An \emph{agent} that interacts with an MDP observes (some function) of the states and selects actions sequentially with the goal 
 to accumulate reward comparable to what could be obtained by a policy $\pi^*$ which maximizes the \emph{expected return} (expected total cumulative discounted reward), $J(\pi):= \E [\sum_{t=1}^\infty \gamma^{t-1} r(S_t,A_t) ; \pi]$ where,  $\E [ \cdot ; \pi]$ denotes the expectation with respect to $P_1$, $P$ and $\pi$. We recall the \emph{value function} $V^\pi(s) :=  \E [\sum_{t=1}^\infty \gamma^{t-1} r(S_t,A_t) | S_1 =s ; \pi]$ and \emph{action-value function} $Q^\pi(s,a) := r(s,a) + \gamma \E_{S'\sim P(\cdot|s,a)} [V^\pi(S')]$. The optimal value function is defined by $V^*(s) = \sup_{\pi\in\Pi} V^\pi(s)$.
 For a given action-value function $Q:\cS\times\cA\to\R$ we define the (deterministic) \emph{greedy policy} w.r.t. $Q$ by $\pi(s) := \argmax_{a\in\cA} Q(s,a)$ and denote $\pi = {\greedy}(Q)$ (ties broken arbitrarily). 
@@ -223,7 +218,7 @@ V^\pi(s) = \E_{A\sim\pi(s)} [ r(s,A) + \gamma \E_{S'\sim P(\cdot|s,A)} [V^\pi(S'
 \end{align}
 and the map $T^{\pi}:\cV\to\cV$, over the set $\cV$ of real-valued functions on $\cS$, defined by $(T^{\pi}V)(s):=  \E_{A\sim\pi(s)} [ r(s,A) + \gamma \E_{S'\sim P(\cdot|s,A)} [V(S')] ] $ is known as the Bellman operator for $\pi$. 
 For finite state spaces an optimal policy can be obtained using dynamic programming methods such as value iteration \citep{\BellmanValueIt} and policy iteration \citep{\HowardPolicyIt}. In policy iteration $V^\pi$ is obtained by solving (\ref{BellmanExpectation}) for a given deterministic policy $\pi:\cS\to\cA$ followed by taking the greedy policy with respect to $V^\pi$ and iterating.
-In MDPs with large or continuous state spaces, value functions are typically represented in some approximation architecture, e.g. as a linear function in some feature space, $V^\pi(s)\approx  \lang v_\pi,\phi(s) \rang_\cF =: \hat V^\pi(s)$ where $\phi:\cS\to\cF$ is a feature map, and $\cF$ a Hilbert space. Choosing a feature map $\phi(\cdot)$ a-priori can be a problem since it is difficult to balance powerful representation ability and compactness. \todoc{We still do this. So maybe reword/clarify. Maybe RKHSs ameliorate this issue, but RKHS spaces are still quite small, or if they are big, learning will be super-slow. My view is that RKHS removes an artificial requirement that the feature map should be finite dimensional and thus increases flexibility, but this is all.}
+In MDPs with large or continuous state spaces, value functions are typically represented in some approximation architecture, e.g. as a linear function in some feature space, $V^\pi(s)\approx  \lang v_\pi,\phi(s) \rang_\cF =: \hat V^\pi(s)$ where $\phi:\cS\to\cF$ is a feature map, and $\cF$ a Hilbert space. Choosing a feature map $\phi(\cdot)$ a-priori can be a problem since it is difficult to balance powerful representation ability and compactness. \todoc{We still do this. So maybe reword/clarify. Maybe RKHSs ameliorate this issue, but RKHS spaces are still quite small, or if they are big, learning will be super-slow. My view is that RKHS removes an artificial requirement that the feature map should be finite dimensional and thus increases flexibility, but this is all.}\todog{Not Sure I understand. We don't pick a compact $\cF$. I guess you can do kernel LSTD which avoids the compactness, is that what you mean? I could say hard to balance representation, compactness/computational efficiency? We don't really have that trade-off to worry about.}
 Further, in the approximate case value estimation entails solving
 \begin{align}
 &\lang w_\pi , \phi(s) \rang_{\cF}\hspace{-0.5mm}\approx \hspace{-0.5mm}r(s,\pi(s)) \hspace{-0.5mm}+\hspace{-0.5mm}  \gamma \E_{S'\sim P(\cdot|s,\pi(s))} [\lang v_\pi , \phi(S')\rang_{\cF}] ,\nn
@@ -297,7 +292,7 @@ can be determined exactly by solving a linear system in $n$ variables by matrix 
 \hat Q_{\hat \mu}^{\pi}(s,a) = r(s,a) + \gamma \sum_{i=1}^n \alpha_i(s,a)\hat V_{\hat \mu}^{\pi}(s_i').\label{Qapprox}
 \end{align}
 We refer to a CME such that $\sum_j |\alpha_j(s,a)| \le 1$ for all $(s,a)\in\cS\times\cA$ a \emph{proper CME}. When $\alpha_j(s_i',a)\ge 0$ and  $\sum_k \alpha_k(s_i',a) = 1$ for all $i,j$, $\hat T^{\pi}_{\hat \mu}$ is the Bellman operator for an MDP defined on the sample $\{s'_i\}_{i=1}^n$, whose dynamics are defined by $P(s_j'|s_i',a) = \alpha_j(s_i',a)$. Otherwise $\alpha_j(s_i',a)$ does not define an MDP, hence we refer to the induced \emph{pseudo-MDP} in general. A theory of pseudo-MDPs, as a method of MDP abstractions, has been developed in \cite{\CsabaFLAM}. 
-A few important results include the following: The condition that makes CMEs proper allows one to define value functions for policies the usual fashion (with expectation w.r.t. signed measures). The value functions satisfy the analog Bellman equations. If one defines the optimal value function as the fixed-point of the analogue Bellman optimality equation then this optimal value function can be found either by linear programming, or, using either value-, or policy-iteration. \todoc{Actually, maybe this paper does not cover all these, due to space limits.. Brr..}
+A few important results include the following: The condition that makes CMEs proper allows one to define value functions for policies the usual fashion (with expectation w.r.t. signed measures). The value functions satisfy the analog Bellman equations. If one defines the optimal value function as the fixed-point of the analogue Bellman optimality equation then this optimal value function can be found either by linear programming, or value-/policy-iteration. \todoc{Actually, maybe this paper does not cover all these, due to space limits.. Brr..}\todog{OK.}
 
 \subsubsection{Policy Iteration using CMEs} \label{GenericAlg}
 
@@ -318,11 +313,7 @@ After $k$ iterations of value iteration using a proper CME $\hat\mu$ we have the
 \end{align}
 where $\hat V_k$ is the estimated value function at iteration $k$, and $\tilde V^*$ is any element of $\cF$.
 \end{theorem}
-Theorem~\ref{ICMLtheorem} applies to any proper estimate of the CME, independently of how it is learned. In one sense this bound is preferable to similar bounds for approximate policy iteration (**citations?**) which would typically require that $\cF$ can well-approximate the value functions of all policies produced at each policy iteration.
-\todoc{But does not this hold when $\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}$ is small for similar methods?
-In some sense, the requirement that this is small is the same that for any policy, the value function can be well approximated.
-This actually follows from the previous result, does not it?
-}
+Theorem~\ref{ICMLtheorem} applies to any proper estimate of the CME, independently of how it is learned.\todoc{But does not this hold when $\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}$ is small for similar methods? In some sense, the requirement that this is small is the same that for any policy, the value function can be well approximated. This actually follows from the previous result, does not it?}\todog{Complicated. I've sent an email, but removed this for now.}
 
 \subsection{Review of Current Approaches} \label{learningCMEs}
 
@@ -333,21 +324,21 @@ We now review the current approaches to learning the CME in model-based reinforc
 The idea of using an induced finite MDP from a model estimate was, to our knowledge, introduced in the Kernel-Based Reinforcement Learning algorithm (KBRL) of \cite{\OrmoneitKBRL} 
 \todoc{The same idea was used by John Rust, though in the context of planning, not for estimating a model.
 See \cite{rust96:randomization} and \cite{sze01:planning}. Also, state space discretization is the same idea.
-}
-who derive an approximate finite Bellman equation induced by a model and solve it. The model can be viewed as approximating the CME (\ref{muDef}) using kernel smoothing (i.e. a Nadaraya-Watson regression estimate \citep{\NadarayaNadarayaWatson,\WatsonNadarayaWatson}),
+}\todog{I added this as a footnote, but we are short of space so may have to drop it, until after reviews. Is it vital for now?}
+who derive an approximate finite Bellman equation induced by a model and solve it.\footnote{The same idea was used by \citet{rust96:randomization} and \citet{sze01:planning}, though in the context of planning, not for estimating a model.} The model can be viewed as approximating the CME (\ref{muDef}) using kernel smoothing (i.e. a Nadaraya-Watson regression estimate \citep{\NadarayaNadarayaWatson,\WatsonNadarayaWatson}),
 \begin{align}
 \hat\mu^{KBRL} (s,a)\hspace{-0.3mm}:= \hspace{-0.3mm}\sum_{i=1}^n\hspace{-0.3mm} \frac{K((s,a),(s_i,a_i))}{\sum_{j=1}^n K((s,a),(s_j,a_j))}\phi(s'_i), \label{KBRLmu}
 \end{align}
 where $K$ is a smoothing kernel.  \todoc{I did not double check whether this is indeed the same as what they do. But I guess it is the same..} 
 No loss function is directly specified or optimized. The induced finite transition dynamics are given by $\alpha^{KBRL}_i(s,a) :=  \frac{K((s,a),(s_i,a_i))}{\sum_{j=1}^n K((s,a),(s_j,a_j))}$ and condition (\ref{L1Constraint}) holds. The KBRL method is shown to be consistent: the learned value function will converge to the optimal value function with infinite data.
 
-One drawback of the approach is that the size of the induced finite MDP scales with the size of the total amount of data and planning via a solving the approximate Bellman equation (\ref{approxBellman})  becomes an intractable bottleneck, scaling cubicly if a full inverse is performed, or quadratically if updated iteratively. Versions of KBRL with efficient planning have been proposed using a stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
+One drawback of the approach is that the size of the induced finite MDP scales with the size of the total amount of data and planning via a solving the approximate Bellman equation (\ref{approxBellman})  becomes an intractable bottleneck, scaling cubicly if a full inverse is performed, or quadratically if updated iteratively. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
 
 \subsubsection{Modeling Transition Dynamics with Kernel Least Squares CMEs}
 
 \cite{\GrunewalderEmbeddingsRL} suggest a regularized least squares approach to learning the CME (\ref{muDef}) applying methods from the literature on learning CMEs (\cite{\SongNonparametric,\GrunewalderEmbeddingsRegression}). In general, a normed hypothesis class $\cH\subset \cF^{\cS\times\cA}$ is chosen and the empirical loss (\ref{EmpMuObjective}) plus a regularization term is minimized,
 \begin{align}
-\hat\mu^{RLS} := \argmin_{\mu\in\cH}  \frac{1}{n}\sum_{i=1}^n || \mu (s_i,a_i) - \phi(s'_i) ||_\cF^2 +\lambda ||\mu||^2_{\cH} . \label{muRLS}
+\hat\mu^{RLS}\hspace{-0.9mm} := \hspace{-0.6mm}\argmin_{\mu\in\cH}  \hspace{-0.7mm}\frac{1}{n}\hspace{-0.7mm}\sum_{i=1}^n\hspace{-0.6mm} || \mu (s_i,a_i) \hspace{-0.7mm}-\hspace{-0.7mm} \phi(s'_i) ||_\cF^2 \hspace{-0.7mm}+\hspace{-0.7mm}\lambda ||\mu||^2_{\cH} . \label{muRLS}
 \end{align}
 When $\cH=\cH_K$ is a RKHS (of $\cF$-valued functions) with a kernel $K$ on $\cS\times\cA$ the solution to (\ref{muRLS}) is $\hat\mu^{KRLS}(s,a) = \sum_{j=1}^n \alpha_j^{KRLS}(s,a) \phi(s'_j)$ where
 \begin{align}
@@ -376,26 +367,22 @@ where $\bPsi:= \left( \psi(s_1,a_1),...,\psi(s_n,a_n) \right)^\top$, $|| \bM ||^
 
 \subsubsection{Factored Linear Action Models}
 
-The approach of \cite{\CsabaFLAM} is to work in the primal and solve (\ref{muRLS}) for a particular case that $\phi:\cS\to\cF$ is a feature map to a Hilbert space $\cF$ such that $\lang\phi(s),\phi(s')\rang_{\cF} = \left\{ \begin{array}{ll} 1 & \mbox{if } s=s' \\ 0 & \mbox{otherwise} \end{array}\right.$, i.e. the limit of a Gaussian kernel as the bandwidth tends to zero, but to impose the constraint (\ref{L1Constraint}) in the optimization, rather than projection after learning. In our experimental experience this method requires less normalization of the CME to guarantee a contraction map but tends to perform worse in practice than the projected version of the algorithm of \cite{\GrunewalderEmbeddingsRL}, perhaps because the constraint can reduce the hypothesis class to such an extent that few good models are represented.
+The approach of \cite{\CsabaFLAM} is to work in the primal and solve (\ref{muRLS}) for a particular case that $\phi:\cS\to\cF$ is a feature map to a Hilbert space $\cF$ such that $\lang\phi(s),\phi(s')\rang_{\cF} = \left\{ \begin{array}{ll} 1 & \mbox{if } s=s' \\ 0 & \mbox{otherwise} \end{array}\right.$, i.e. the limit of a Gaussian kernel as the bandwidth tends to zero, but to impose the constraint (\ref{L1Constraint}) in the optimization, rather than projection after learning. In our experience this method requires less normalization of the CME to guarantee a contraction map but can perform worse in practice, perhaps because the constraint can reduce the hypothesis class so that fewer good models are represented.
 
 \section{Compressed CMEs for RL}  \label{Compression}
 
-As discussed in Section~\ref{learningCMEs}, one drawback of the CME approach is that the size of the induced finite (pseudo-)MDP scales with the amount of data observed so that planning scales poorly. In this section we will present a version of the algorithm of \cite{\GrunewalderEmbeddingsRL} which is more efficient to learn, and which induces a small compressed MDP on a subset of the data points to ensure efficient planning. We will learn a \emph{compression set} $\cC = \{ c_1,...,c_m \}\subseteq \cS$  with $m\ll n = |\cD|$, and a \emph{compressed CME} $\hat\mu^{COMP}(\cdot)$ of the form
+As discussed in Section~\ref{learningCMEs}, one drawback of the CME approach is that the size of the induced finite (pseudo-)MDP scales with the amount of data observed so that planning scales poorly. In this section we will present a version of the algorithm of \cite{\GrunewalderEmbeddingsRL} which is more efficient to learn, and which induces a small compressed MDP on a subset of the data points to ensure efficient planning. We will learn a \emph{compression set} $\cC = \{ c_1,...,c_m \}\subseteq \cS$  with $m\ll n = |\cD|$, and a \emph{compressed CME} $\hat\mu^{CMP}(\cdot)$ of the form
 \begin{align}
-\hat\mu^{COMP}(s,a) = \sum_{j=1}^m \alpha^{COMP}_j(s,a) \phi(c_j), \label{CompressedCME}
+\hat\mu^{CMP}(s,a) = \sum_{j=1}^m \alpha^{CMP}_j(s,a) \phi(c_j), \label{CompressedCME}
 \end{align}
 so that the induced finite pseudo-MDP is defined on $\cC$. Details of learning such a CME are presented in Section~\ref{LearningCompressedModel}. First we detail the choice of the compression set $\cC$.
-
-
-
-
 
 \subsection{Learning the Compression Set} \label{learningCompression}
 
 We now show that learning CME transition models for RL suggests a principled means of learning a compression set. We first introduce a useful guarantee for compression sets:
 
 \begin{definition} \label{lossyCompression}
-Given any set $\cP = \{s'_j\}_{j=1}^n$, and any small error $\delta$, a compression set $\cC=\{c_j\}_{j=1}^m$ is a \emph{$\delta$-lossy compression} of $\cP$, if given any proper CME $\hat\mu(\cdot)$ of the form $\hat\mu(s,a) = \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j)$, there exists a proper CME $\hat\mu^{COMP}(s,a) = \sum_{j=1}^m \alpha^{COMP}_j(s,a) \phi(c_j)$, which approximates $\hat\mu(s,a)$ in $\cF$ in the sense that $\sup_{(s,a)\in\cS\times\cA}||\hat\mu(s,a) - \hat\mu^{COMP}(s,a)||_\cF < \delta$.
+Given any set $\cP = \{s'_j\}_{j=1}^n$, and any small error $\delta$, a compression set $\cC=\{c_j\}_{j=1}^m$ is a \emph{$\delta$-lossy compression} of $\cP$, if given any proper CME $\hat\mu(\cdot)$ of the form $\hat\mu(s,a) = \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j)$, there exists a proper CME $\hat\mu^{CMP}(s,a) = \sum_{j=1}^m \alpha^{CMP}_j(s,a) \phi(c_j)$, which approximates $\hat\mu(s,a)$ in $\cF$ in the sense that $\sup_{(s,a)\in\cS\times\cA}||\hat\mu(s,a) - \hat\mu^{CMP}(s,a)||_\cF < \delta$.
 \end{definition}
 
 Algorithm~\ref{CompressionRoutine} gives a method to maintain a $\delta$-lossy compression set. The required minimization problem $\min_{{\bm b}\in\R^m , ||{\bm b}||_1\le 1} ||\sum_{i=1}^m b_i \phi(c_i) - \phi(s'_j)||_{\cF}$ can be solved using Lasso (see Appendix~\ref{LassoSec} for details), and we remark that the feature vectors $\phi(s)$ never need to be explicitly computed.
@@ -416,50 +403,50 @@ Algorithm~\ref{CompressionRoutine} gives a method to maintain a $\delta$-lossy c
 \begin{theorem} \label{CompressionTheorem}
 Algorithm~\ref{CompressionRoutine} with $\cC$ initialized to $\emptyset$ returns a $\delta$-lossy compression set of $\cP$.
 \end{theorem}
-\begin{proof} The result follows immediately from Lemma~\ref{COMPlemma} in Appendix~\ref{learningCompressionAppendix},
+\begin{proof} The result follows immediately from Lemma~\ref{CMPlemma} in Appendix~\ref{learningCompressionAppendix},
 which states that if $\max_{1\le j \le n } \min_{{\bm b}\in\R^m , ||{\bm b}||_1\le 1}
  ||\sum_{i=1}^m b_i \phi(c_i)-\phi(s'_j)||_{\cF}\le \delta$ then $\{c_1,\dots,c_m\}$ is a $\delta$-lossy compression set of $\cP$.
 \end{proof}
 
-A $\delta$-lossy compression $\cC$ guarantees the \emph{existence} of a good compressed CME defined over $\cC$. The trivial Corollary~\ref{ICMLcorollary} of Theorem~\ref{ICMLtheorem} (see Appendix~\ref{learningCompressionAppendix}) further implies that if there exists a CME $\hat\mu(\cdot)$ with a good guarantee for solving (pseudo-)MDPs via Theorem~\ref{ICMLtheorem}, then given a $\delta$-lossy $\cC$ there exists a good compressed proper CME $\hat\mu^{COMP}(\cdot)$ defined over $\cC$ with almost as good a guarantee: we only pay an additional term of $\frac{2\gamma \delta||\tilde V^*||_{\cF}}{(1-\gamma^2)}$ in the bound of Theorem~\ref{ICMLtheorem} for solving an MDP with the CME $\hat\mu^{COMP}(\cdot)$ instead of the CME $\hat\mu(\cdot)$. This is an existence proof: in the following section we detail how to learn the compressed CME.
+A $\delta$-lossy compression $\cC$ guarantees the \emph{existence} of a good compressed CME defined over $\cC$. The trivial Corollary~\ref{ICMLcorollary} of Theorem~\ref{ICMLtheorem} (see Appendix~\ref{learningCompressionAppendix}) further implies that if there exists a CME $\hat\mu(\cdot)$ with a good guarantee for solving (pseudo-)MDPs via Theorem~\ref{ICMLtheorem}, then given a $\delta$-lossy $\cC$ there exists a good compressed proper CME $\hat\mu^{CMP}(\cdot)$ defined over $\cC$ with almost as good a guarantee: we only pay an additional term of $\frac{2\gamma \delta||\tilde V^*||_{\cF}}{(1-\gamma^2)}$ in the bound of Theorem~\ref{ICMLtheorem} for solving an MDP with the CME $\hat\mu^{CMP}(\cdot)$ instead of the CME $\hat\mu(\cdot)$. This is an existence proof: in the following section we detail how to learn the compressed CME.
 
 \subsection{Learning Compressed CMEs} \label{LearningCompressedModel}
 
-Our approach to learn the compressed CME $\mu^{COMP}(\cdot)$, given a compression set $\cC$, will be a version of the kernel least-squares method \citep{\GrunewalderEmbeddingsRL}, with a compressed representation. Thus we seek a CME $\mu^{COMP}(\cdot)$ of the form (\ref{CompressedCME}) where the $\alpha^{COMP}_j(s,a)$ are of the form (\ref{KRLSalphas}),
+Our approach to learn the compressed CME $\mu^{CMP}(\cdot)$, given a compression set $\cC$, will be a version of the kernel least-squares method \citep{\GrunewalderEmbeddingsRL}, with a compressed representation. Thus we seek a CME $\mu^{CMP}(\cdot)$ of the form (\ref{CompressedCME}) where the $\alpha^{CMP}_j(s,a)$ are of the form (\ref{KRLSalphas}),
 \begin{align}
-\alpha_j^{COMP}(s,a) &=  \sum_{i=1}^n K((s,a),(s_i,a_i)) W^{COMP}_{ij}, \label{compressedAlphas}
+\alpha_j^{CMP}(s,a) &=  \sum_{i=1}^n K((s,a),(s_i,a_i)) W^{CMP}_{ij}, \label{compressedAlphas}
 \end{align}
-where $\bW^{COMP}\in \R^{n\times m}$ is to be optimized to minimize (\ref{EmpMuObjective}). The RKHS regularized least squares solution\footnote{$\bW = (\bK+\lambda\bI)^{-1}\bL^{DC}(\bL^{CC})^{-1}$ where $L_{jk}^{DC} = \lang \phi(s'_j) , \phi(c_k) \rang_{\cF}$ and $L_{jk}^{CC} = \lang \phi(c_j) , \phi(c_k) \rang_{\cF}$.} is prohibitively expensive to compute, and so we optimize $\bW^{COMP}$ using  kernel matching pursuit \citep{\BengioKernelMP,\MallatMatchingPursuit} which is an efficient \todoc{In what sense? Any paper that makes a firm claim on this? Is this an empirical or a theoretical statement?}
+where $\bW^{CMP}\in \R^{n\times m}$ is to be optimized to minimize (\ref{EmpMuObjective}). The RKHS regularized least squares solution\footnote{$\bW = (\bK+\lambda\bI)^{-1}\bL^{DC}(\bL^{CC})^{-1}$ where $L_{jk}^{DC} = \lang \phi(s'_j) , \phi(c_k) \rang_{\cF}$ and $L_{jk}^{CC} = \lang \phi(c_j) , \phi(c_k) \rang_{\cF}$.} is prohibitively expensive to compute, and so we optimize $\bW^{CMP}$ using  kernel matching pursuit \citep{\BengioKernelMP,\MallatMatchingPursuit} which is an efficient \todoc{In what sense? Any paper that makes a firm claim on this? Is this an empirical or a theoretical statement?}\todog{Its just sparse by construction. Maybe I misunderstand?}
 sparse-greedy method of optimizing kernel least squares. In our application, kernel matching pursuit maintains a \emph{sparse basis} of kernel functions $\cB = \{ K(\cdot,(\hat s_\ell,\hat a_\ell)) \}_{\ell=1}^d$ and $d\times m$ weight matrix $\bW^{MP} = (\bw_1,...,\bw_d)^\top$, where for each $\ell$, $(\hat s_\ell, \hat a_\ell)\in\cD$, and where $d\ll n$, such that (\ref{compressedAlphas}) is represented only using the basis $\cB$: $\alpha_j^{MP}(s,a)=  \sum_{\ell=1}^d K((s,a),(\hat s_\ell,\hat a_\ell)) W^{MP}_{\ell j}$. Matching pursuit incrementally adds basis functions $K(\cdot,(\hat s_\ell,\hat a_\ell))$ and weights $\bw_\ell\in\R^m$ ``greedily'' -- i.e. to maximally minimize the regression loss (\ref{EmpMuObjective}),
 \begin{align}
 \frac{1}{n}\sum_{i=1}^n ||\sum_{\ell=1}^d\sum_{j=1}^m K((s_i,a_i),(\hat s_\ell,\hat a_\ell)) W^{MP}_{\ell j}\phi(c_j) - \phi(s'_i) ||^2_\cF.\nn
 \end{align}
-Given the next basis element, each new weight $\bw_\ell$ can be found in closed form, and so each addition of a (basis,weight) pair requires a sweep over all candidate basis points. There are some non-standard aspects of the application of matching pursuit to optimize $\bW^{COMP}$ and details are included in Appendix~\ref{MatchingPursuit}, where we demonstrate for instance that $\cF$ can be an infinite-dimensional feature space of an RKHS and yet we can still perform matching pursuit efficiently. The greedy incremental approach is suited to the RL setting since we interact with the system to gather new data, which is then explored by matching pursuit to discover new basis functions, but we do not sweep over the full data set at each iteration (see Algorithm~\ref{PIwCMEfeatures} for details).
+Given the next basis element, each new weight $\bw_\ell$ can be found in closed form, and so each addition of a (basis,weight) pair requires a sweep over all candidate basis points. There are some non-standard aspects of the application of matching pursuit to optimize $\bW^{CMP}$ and details are included in Appendix~\ref{MatchingPursuit}, where we demonstrate for instance that $\cF$ can be an infinite-dimensional feature space of an RKHS and yet we can still perform matching pursuit efficiently. The greedy incremental approach is suited to the RL setting since we interact with the system to gather new data, which is then explored by matching pursuit to discover new basis functions, but we do not sweep over the full data set at each iteration (see Algorithm~\ref{PIwCMEfeatures} for details).
 
 Once matching pursuit has found the basis $\cB$ we ``backfit'' the weights by performing RKHS-regularized kernel least squares in the primal,
 \begin{align}
-\bW^{COMP}&= \argmin_{\bW} \frac{1}{n}\sum_{i=1}^n ||err_i(\bW) ||^2_\cF \nn\\
+\bW^{CMP}&= \argmin_{\bW} \frac{1}{n}\sum_{i=1}^n ||err_i(\bW) ||^2_\cF \nn\\
 &\quad+ \lambda {\rm trace}(\bW\bL^{CC}\bW^\top\bK^\top), \label{RKHSregPrimal}
 \end{align}
-where at the price of a slight abuse of notation we redefined $\bW^{COMP}$ to have dimension $d\times m$, and
+where at the price of a slight abuse of notation we redefined $\bW^{CMP}$ to have dimension $d\times m$, and
  $err_i(\bW)  := \sum_{\ell=1}^d\sum_{j=1}^m K((s_i,a_i),(\hat s_\ell,\hat a_\ell)) W_{\ell j}\phi(c_j)\hspace{-0.7mm} -\hspace{-0.7mm} \phi(s'_i)$. The solution to~\eqref{RKHSregPrimal} can be written as
 \begin{align}
-\bW^{COMP} = (\bPsi^\top \bPsi + \lambda n\bK)^{-1}\bPsi^\top\bL^{DC}(\bL^{CC})^{-1}, \label{compressedWformula}
+\bW^{CMP} = (\bPsi^\top \bPsi + \lambda n\bK)^{-1}\bPsi^\top\bL^{DC}(\bL^{CC})^{-1}, \label{compressedWformula}
 \end{align}
-where $K_{jk} = K((\hat s_j,\hat a_j),(\hat s_k,\hat a_k))$, $L_{jk}^{DC} = \lang \phi(s'_j) , \phi(c_k) \rang_{\cF}$ and $L_{jk}^{CC} = \lang \phi(c_j) , \phi(c_k) \rang_{\cF}$, and $\lambda$ can be cross validated. The term ${\rm trace}(\bW\bL^{CC}\bW^\top\bK^\top)$ in (\ref{RKHSregPrimal}) is the RKHS norm regularizer $||\hat\mu^{COMP}(\cdot)||_K^2$. Computing (\ref{compressedWformula}) is efficient since the inverse is of a $d\times d$ matrix. We add a small ridge term to all the kernel matrix inverses to prevent numerical instability. 
+where $K_{jk} = K((\hat s_j,\hat a_j),(\hat s_k,\hat a_k))$, $L_{jk}^{DC} = \lang \phi(s'_j) , \phi(c_k) \rang_{\cF}$ and $L_{jk}^{CC} = \lang \phi(c_j) , \phi(c_k) \rang_{\cF}$, and $\lambda$ can be cross validated. The term ${\rm trace}(\bW\bL^{CC}\bW^\top\bK^\top)$ in (\ref{RKHSregPrimal}) is the RKHS norm regularizer $||\hat\mu^{CMP}(\cdot)||_K^2$. Computing (\ref{compressedWformula}) is efficient since the inverse is of a $d\times d$ matrix. We add a small ridge term to all the kernel matrix inverses to prevent numerical instability. 
 
-Finally, to ensure a contraction we obtain a proper CME by projecting the learned weights to the L1-ball: 
+To ensure a contraction we obtain a proper CME by projecting the learned weights to the L1-ball: 
 %for $f = \sum_{j=1}^m\alpha_j(s,a) \phi(s_j)$. 
-Denoting ${\rm proj}(f):=\argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1} || f - \sum_{j=1}^m \beta_j  \phi(c_j)  ||_{\cF}$ then 
+Denoting ${\rm proj}(f)\hspace{-0.5mm}:=\hspace{-0.5mm}\argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1}\hspace{-0.3mm} || f \hspace{-0.3mm}-\hspace{-0.3mm} \sum_{j=1}^m \beta_j  \phi(c_j)  ||_{\cF}$ then 
 \begin{align}
-\balpha^{PCOMP}(s,a) = {\rm proj}(\hat \mu^{COMP}(s,a) ),\label{CompProjAlpha}
+\balpha^{PCMP}(s,a) = {\rm proj}(\hat \mu^{CMP}(s,a) ),\label{CompProjAlpha}
 \end{align}
-which can be done using a Lasso (see Appendix~\ref{LassoSec}). After the projection we normalize the weights, $\balpha^{PCOMP}(s,a) \leftarrow \balpha^{PCOMP}(s,a)/||\balpha^{PCOMP}(s,a)||_1$, which is unnecessary theoretically but performs slightly better in practice. \todoc{This is confusing. Is it because of numerical issues? Anyhow, this must be explained.}
+which can be done using a Lasso (see Appendix~\ref{LassoSec}). After the projection we normalize the weights, $\balpha^{PCMP}(s,a) \leftarrow \balpha^{PCMP}(s,a)/||\balpha^{PCMP}(s,a)||_1$, which is unnecessary theoretically but performs slightly better in practice. \todoc{This is confusing. Is it because of numerical issues? Anyhow, this must be explained.}\todog{It makes the pseudo-MDP closer to an MDP. I think what happens otherwise maybe that some regions $||\balpha(s,a)||_1$ is very small, and everything degenerates, and its practically better to just to enforce an actual MDP. I don't think its a numerical thing -- I don't get singluarity errors without it.}
 
 
 \subsection{Model-based Policy Iteration with Compressed CMEs}
 
-Our algorithm combines the compression set learning of Section~\ref{learningCompression}, CME learning of Section~\ref{LearningCompressedModel} and policy iteration using CMEs of Section~\ref{GenericAlg} (specifically the CME $\hat\mu^{PCOMP}(\cdot) = \sum_{j=1}^m \alpha^{PCOMP}(\cdot)\phi(c_j)$). The algorithm is detailed in Algorithm~\ref{PIwCMEfeatures}.
+Our algorithm combines the compression set learning of Section~\ref{learningCompression}, CME learning of Section~\ref{LearningCompressedModel} and policy iteration using CMEs of Section~\ref{GenericAlg} (specifically the CME $\hat\mu^{PCMP}(\cdot) = \sum_{j=1}^m \alpha^{PCMP}(\cdot)\phi(c_j)$). The algorithm is detailed in Algorithm~\ref{PIwCMEfeatures}.
 {
 \begin{algorithm}[htb]
    \caption{Policy iteration with compressed kernel CMEs}
@@ -469,16 +456,15 @@ Our algorithm combines the compression set learning of Section~\ref{learningComp
    \STATE {\bf Parameters:} Kernel $K$ on $\cS\times\cA$; feature map $\phi(\cdot)$ on $\cS$; compression tolerance $\delta$; policy improvements $J$; $n_{\rm new}$; maximum basis dimension $d$.\\
 	 \STATE {\bf Initialize:} action-value function e.g. $Q_0=r$; $\cD_0 = \emptyset$; $\pi_1 = {\greedy}(Q_0)$; $\psi^0(\cdot)$; $n_0=0$; $\cB_0 = \emptyset$.
 	\FOR {$k=1,2,...$}	 
-	 \STATE {\bf Data acquisition:} Collect $n_{\rm new}$ data points $\cD_{\rm new} = \{s_i,a_i,s'_i\}_{i=n_{k-1}+1}^{n_k}$ from behavior policy distribution $\rho^{\nu_k}$; $n_k\leftarrow n_k+n_{\rm new}$; Aggregate data: $\cD_k = \cD_{k-1}\cup\cD_{\rm new} = \{s_i,a_i,s'_i\}_{i=1}^{n_k}$. \todoc[inline]{$\rho^{\nu_k}$ was defined much earlier, also Section \ref{sec:exp} suggests a particular data collection strategy, which is different?}
+	 \STATE {\bf Data acquisition:} Collect $n_{\rm new}$ data points $\cD_{\rm new} = \{s_i,a_i,s'_i\}_{i=n_{k-1}+1}^{n_k}$ from behavior policy distribution $\rho^{\nu_k}$; $n_k\leftarrow n_k+n_{\rm new}$; Aggregate data: $\cD_k = \cD_{k-1}\cup\cD_{\rm new} = \{s_i,a_i,s'_i\}_{i=1}^{n_k}$. \todoc[inline]{$\rho^{\nu_k}$ was defined much earlier, also Section \ref{sec:exp} suggests a particular data collection strategy, which is different?}\todog{I deleted the earlier definition. In experiments $\rho^{\nu_k}$ is just a 50-50 mixture of the greedy policy distribution and an $\epsilon$-greedy exploratory policy distribution. I've clarified in the experiment details.}
 	 \STATE {\bf Augment compression set with new data:} $\cC_k = \mbox{augmentCompressionSet}(\cC_{k-1},\{s'_i\}_{i=n_{k-1}+1}^{n_k},\delta)$.
 	 \STATE {\bf Augment candidate feature dictionary with kernel functions on new data:} $\cG_k = \cB_k \cup \{ K(\cdot,(s_i,a_i)) \}_{i=n_{k-1}+1}^{n_k}$
 	 \STATE {\bf Sparse basis selection:} Learn sparse basis $\cB_k = \{ K(\cdot,(\hat s_\ell,\hat a_\ell)) \}_{\ell = 1}^{d_k}$, $d_k\le d$ from candidates $\cG_k$ using matching pursuit (Section~\ref{MatchingPursuit}); Set $\psi_\ell^k(\cdot) = K((\hat s_\ell,\hat a_\ell),\cdot)$, $\bPsi_k=\left( \psi^k(s_1,a_1),...,\psi^k(s_{n_k},a_{n_k}) \right)^\top$.
-	 \STATE {\bf Backfit CME weights:} $\bW^{COMP}_k = (\bPsi_k^\top \bPsi_k + \lambda \bK)^{-1}\bPsi_k^\top\bL^{DC}(\bL^{CC})^{-1}$ as in (\ref{compressedWformula}).
-	 \STATE {\bf Compute finite pseudo-MDP dynamics:} $\alpha(s_i',a) = \psi^k(s'_i,a)^\top \bW^{COMP}_k$ for all $a\in\cA$, $s_i'\in\cD_k$.
-	 \STATE {\bf Project weights:} $\balpha^{PCOMP}(s,a) = {\rm proj}(\hat \mu^{COMP}(s,a) )$ (\ref{CompProjAlpha}) and normalize $\balpha^{PCOMP}(s,a) \leftarrow \balpha^{PCOMP}(s,a)/||\balpha^{PCOMP}(s,a)||_1$.
-	 \todoc[inline]{Confusing: Cannot (and does not need to do) for all state-action pairs. This needs to be explained.}
+	 \STATE {\bf Backfit CME weights:} $\bW^{CMP}_k = (\bPsi_k^\top \bPsi_k + \lambda \bK)^{-1}\bPsi_k^\top\bL^{DC}(\bL^{CC})^{-1}$ as in (\ref{compressedWformula}).
+	 \STATE {\bf Define CME $\mu^{PCMP}$:} $\balpha^{CMP}(s,a) = \psi^k(s,a)^\top \bW^{CMP}_k$, project $\balpha^{PCMP}(s,a) = {\rm proj}(\hat \mu^{CMP}(s,a) )$ (\ref{CompProjAlpha}) and normalize $\balpha^{PCMP}(s,a) \leftarrow \balpha^{PCMP}(s,a)/||\balpha^{PCMP}(s,a)||_1$.
+	 \todoc[inline]{Confusing: Cannot (and does not need to do) for all state-action pairs. This needs to be explained.}\todog{Its just a definition. Hopefully clearer now.}
 	\FOR {$j=1,2,...,J$}
-   \STATE {\bf Policy evaluation:} Solving approximate Bellman Equation (\ref{approxBellman}) to obtain estimate $\hat V_j$ of $V^{\pi_k}$ at the sample points $s_i'\in\cD_k$. Set $\hat Q_j(s,a) = r(s,a) + \gamma \sum_{j=1}^{n_k} \alpha_j(s,a) \hat V_j(s_i')$. \todoc[inline]{$\alpha_j$ is undefined.}
+   \STATE {\bf Policy evaluation:} Using finite pseudo-MDP dynamics $\balpha^{PCMP}(s_i',a)$ for all $a\in\cA$, $s_i'\in\cD_k$ solve approximate Bellman Equation (\ref{approxBellman}) to obtain estimate $\hat V_j$ of $V^{\pi_k}$ at the sample points $s_i'\in\cD_k$. Set $\hat Q_j(s,a) = r(s,a) + \gamma \sum_{j=1}^{n_k} \alpha^{PCMP}_j(s,a) \hat V_j(s_i')$. \todoc[inline]{$\alpha_j$ is undefined.}\todog{Fixed.}
 	 \STATE {\bf Policy improvement:} $\pi_{k} \leftarrow \greedy(\hat Q_j)$. 
    \ENDFOR
 	 \STATE $\pi_{k+1} \leftarrow \pi_{k} $.
@@ -498,8 +484,8 @@ Some notes on the algorithm:
 \section{Experiments}
 \label{sec:exp}
 
-We now summarize the experimental results. For reproducibility more detail is given in Appendix~\ref{ExperimentDetails}. We compared our compressed CME method to the KBRL algorithm \citep{\OrmoneitKBRL} and the full kernel least-squares method of \citet{\GrunewalderEmbeddingsRL}. We convincingly outperformed the full KBRL method, in terms of the quality of the learned policy, and so did not compare to any of the more efficient versions of KBRL. \todoc{Actually, as far as I remember Kveton also says that they method improves the policies, not only computation. This is entirely possible, e.g., maybe they avoid overfitting. Anyhow, needs to be double checked and then maybe we add a remark.}
-We report mean results over 10 runs of each experiment, and standard error. Experiments are run on a single-core cluster which is slow: timing results would be 2-3 times faster on a standard desktop. For all MDPs, at each iteration the learners were given 2 trajectories of data (defining $\rho^{\nu_k}$ in the algorithm): one from the current greedy policy and a second from an $\epsilon$-greedy ($\epsilon = 0.3$) ``exploratory'' version.
+We now summarize the experimental results. For reproducibility more detail is given in Appendix~\ref{ExperimentDetails}. We compared our compressed CME method to the KBRL algorithm \citep{\OrmoneitKBRL} and the full kernel least-squares method of \citet{\GrunewalderEmbeddingsRL}. We convincingly outperformed the full KBRL method, in terms of the quality of the learned policy, and so did not compare to any of the more efficient versions of KBRL. \todoc{Actually, as far as I remember Kveton also says that they method improves the policies, not only computation. This is entirely possible, e.g., maybe they avoid overfitting. Anyhow, needs to be double checked and then maybe we add a remark.}\todog{Both efficient KBRL papers report worse results for smaller $m$. Shall I add this?}
+We report mean results over 10 runs of each experiment, and standard error. Experiments are run on a single-core cluster which is slow: timing results would be 2-3 times faster on a standard desktop. For all MDPs, at each iteration the learners were given 2 trajectories of data: one from the current greedy policy and a second from an $\epsilon$-greedy ($\epsilon = 0.3$) ``exploratory'' version (defining $\rho^{\nu_k}$ in the algorithm as 50-50 mixture of those two policies).
 
 \subsection{Cart-Pole and Mountain-Car Benchmarks}
 
@@ -591,7 +577,7 @@ On this task the compressed CME method is able to learn a near optimal policy, a
 In this work we have presented a model-based policy iteration algorithm, based on learning a compressed CME of the transition dynamics, and solving the induced finite pseudo-MDP exactly and efficiently using dynamic programming. In contrast to typical approximate dynamic programming this results in a stable algorithm with good performance guarantees in terms of the transistion model error. An analysis of the CME approach suggested a principled means to choose a compression set for the CME, which guarantees an at most small loss in the representation power of the CME, and consequently only a small degradation in performance bound. To learn the CME our approach builds a powerful state-action representation online based on interactions with the system using sparse-greedy feature selection from a data-defined dictionary of kernel functions, enhancing the state-action representation to maximally improve the model. We demonstrate that we overcome the planning bottleneck of competitor methods and obtain better policies on a range of MDPs. We remark that the principled compression approach could be used in other related algorithms such as that of \cite{\OrmoneitKBRL}. Future work could include using other representations of the CME in this context, such as deep neural networks. We also remark that it is possible to combine the compression approach with the constrained approach of \citet{\CsabaFLAM} which we defer for a longer version.
 \todoc{Other future work: Parameter sensitivity. How did we select parameters?
 Other arbitrary choices:
-New compression points are looked at the new data only, why?}
+New compression points are looked at the new data only, why?}\todog{Yes. Lets perhaps add later when we get more space.}
 
 \clearpage
 \begin{small}
@@ -651,43 +637,43 @@ Suppose proper CMEs $\bar\mu(\cdot)$ and $\hat\mu(\cdot)$ are such that
 Then after $k$ iterations of value iteration using a  $\bar\mu(\cdot)$ we have the following guarantee for the value of the learned policy $\bar\pi_k$
 \begin{align}
 &||V^{\bar\pi_k} - V^*||_{\infty}\le \frac{2\gamma}{(1-\gamma^2)}\Big( \gamma^k ||\hat V_1 - \hat V_0||_{\infty} + 2|| V^* - \tilde V^* ||_{\infty}  \nn\\
-&\quad+\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}||\tilde V^*||_{\cF} + \delta||\tilde V^*||_{\cF} \Big), \label{COMPbound}
+&\quad+\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}||\tilde V^*||_{\cF} + \delta||\tilde V^*||_{\cF} \Big), \label{CMPbound}
 \end{align}
 where $\hat V_k$ is the estimated value function at iteration $k$, and $\tilde V^*$ is any element of $\cF$.
 \end{corollary}
-Thus, suppose that $\hat\mu(\cdot)$ is known to be good, then comparing Corollary~\ref{ICMLcorollary} with Theorem~\ref{ICMLtheorem}, we only pay an additional term of $\frac{2\gamma \delta||\tilde V^*||_{\cF}}{(1-\gamma^2)}$ for solving an MDP with the CME $\bar\mu(\cdot)$ instead of the CME $\hat\mu(\cdot)$. In particular if we take $\bar\mu(\cdot)$ to be a compressed CME $\hat \mu^{COMP}(\cdot)$ whose existance is guaranteed by a $\delta$-lossy compression then guarantee (\ref{COMPbound}) holds for $\hat \mu^{COMP}(\cdot)$.
+Thus, suppose that $\hat\mu(\cdot)$ is known to be good, then comparing Corollary~\ref{ICMLcorollary} with Theorem~\ref{ICMLtheorem}, we only pay an additional term of $\frac{2\gamma \delta||\tilde V^*||_{\cF}}{(1-\gamma^2)}$ for solving an MDP with the CME $\bar\mu(\cdot)$ instead of the CME $\hat\mu(\cdot)$. In particular if we take $\bar\mu(\cdot)$ to be a compressed CME $\hat \mu^{CMP}(\cdot)$ whose existance is guaranteed by a $\delta$-lossy compression then guarantee (\ref{CMPbound}) holds for $\hat \mu^{CMP}(\cdot)$.
 
 \subsection{Proof of Theorem~\ref{CompressionTheorem}}
 
 We begin with a lemma:
 
-\begin{lemma}\label{COMPlemma} Given $\{s'_1,s'_2,...,s'_n\}$, suppose $\cC = \{ c_1,...,c_m \}\subseteq \cS$ is such that for all $s'_i\in\cD$ there exists ${\bm b} = {\bm b}(s_j)\in\R^m$, $||\bm b||_1\le 1$ such that
+\begin{lemma}\label{CMPlemma} Given $\{s'_1,s'_2,...,s'_n\}$, suppose $\cC = \{ c_1,...,c_m \}\subseteq \cS$ is such that for all $s'_i\in\cD$ there exists ${\bm b} = {\bm b}(s_j)\in\R^m$, $||\bm b||_1\le 1$ such that
 \begin{align}
 ||\sum_{i=1}^m b_i(s'_j) \phi(c_i) - \phi(s'_j)||_{\cF} \le \delta. \label{Ccondition}
 \end{align}
 Then let $\mu(\cdot)$ be defined via $\mu(s,a) = \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j)$, with $||\balpha(s,a)||_1\le 1$ for all $(s,a)\in\cS\times\cA$. 
-If we define $\alpha^{COMP}_i(s,a)=\sum_{j=1}^n b_i(s'_j) \alpha_j(s,a)$ then $\sum |\alpha^{COMP}_i(s,a)|\le 1$ and for all $(s,a)$
+If we define $\alpha^{CMP}_i(s,a)=\sum_{j=1}^n b_i(s'_j) \alpha_j(s,a)$ then $\sum |\alpha^{CMP}_i(s,a)|\le 1$ and for all $(s,a)$
 \begin{align}
-||\mu(s,a) - \hat\mu^{COMP}(s,a)||_\cF < \delta. \nn
+||\mu(s,a) - \hat\mu^{CMP}(s,a)||_\cF < \delta. \nn
 \end{align}
 \end{lemma}
 
 \begin{proof}
 \begin{align}
-\sum_{i=1}^m |\alpha^{COMP}_i(s,a)| & = \sum_{i=1}^m |\sum_{j=1}^n b_i(s'_j) \alpha_j(s,a)| \nn\\
+\sum_{i=1}^m |\alpha^{CMP}_i(s,a)| & = \sum_{i=1}^m |\sum_{j=1}^n b_i(s'_j) \alpha_j(s,a)| \nn\\
 &\le \sum_{j=1}^n|\alpha_j(s,a)| \sum_{i=1}^m  |b_i(s'_j)| \le 1, \nn
 \end{align}
 and,
 \begin{align}
-&||\hat\mu(s,a) - \hat\mu^{COMP}(s,a)||_\cF \nn\\
-&= || \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j) - \sum_{i=1}^m \alpha^{COMP}_i(s,a) \phi(c_i) ||_\cF \nn\\
+&||\hat\mu(s,a) - \hat\mu^{CMP}(s,a)||_\cF \nn\\
+&= || \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j) - \sum_{i=1}^m \alpha^{CMP}_i(s,a) \phi(c_i) ||_\cF \nn\\
 &= || \sum_{j=1}^n \alpha_j(s,a)( \phi(s'_j) - \sum_{i=1}^m b_i(s'_j)  \phi(c_i)) ||_\cF \nn\\
 &\le \sum_{j=1}^n |\alpha_j(s,a)| \max_j || \phi(s'_j) - \sum_{i=1}^m b_i(s'_j)  \phi(c_i)) ||_\cF\nn\\
 &\le \delta.\nn
 \end{align}
 \end{proof}
 
-Note that by construction the compression set returned by Algorithm~\ref{CompressionRoutine} satisfies condition (\ref{Ccondition}) and is therefore a $\delta$-lossy compression. Hence Lemma~\ref{COMPlemma} directly implies Theorem~\ref{CompressionTheorem}.
+Note that by construction the compression set returned by Algorithm~\ref{CompressionRoutine} satisfies condition (\ref{Ccondition}) and is therefore a $\delta$-lossy compression. Hence Lemma~\ref{CMPlemma} directly implies Theorem~\ref{CompressionTheorem}.
 
 \section{Additional Details of the Feature Selection Process}\label{MatchingPursuit}
 
@@ -773,7 +759,7 @@ We define the dictionary $\cG_k$ adaptively at each stage, in a data-driven way.
 
 \section{Experimental Details} \label{ExperimentDetails}
 
-We here give more details of the experiments for reproducibility purposes. For all MDPs the horizon of each MDP is 100, so that $n_{\rm new} = 200$ data points were added at each iteration. To perform planning at each iteration we performed $J=10$ policy evaluation/improvement steps, before returning to the MDP to collect more data. For the compressed CME the size of the sparse-greedy feature space was constrained to be no greater than $d=200$. For all 3 methods we performed 5-fold cross-validation over 10 bandwidth parameters to optimize the ``input'' kernel $K$ on $\cS\times\cA$. For the two least-squares methods we also cross-validated the regularization parameter over 20 values. The ``output'' feature map $\phi(\cdot)$ also corresponds to a Gaussian kernel $\phi(s) = L(s,\cdot)$, and the bandwidth of $L$ was chosen using an informal search for each MDP (it is not clear how this parameter can be validated during the algorithm). For planning we set $\gamma=0.98$, but we report results for $\gamma=0.99$. \todoc{Why? This is weird and calls for an explanation.}
+We here give more details of the experiments for reproducibility purposes. For all MDPs the horizon of each MDP is 100, so that $n_{\rm new} = 200$ data points were added at each iteration. To perform planning at each iteration we performed $J=10$ policy evaluation/improvement steps, before returning to the MDP to collect more data. For the compressed CME the size of the sparse-greedy feature space was constrained to be no greater than $d=200$. For all 3 methods we performed 5-fold cross-validation over 10 bandwidth parameters to optimize the ``input'' kernel $K$ on $\cS\times\cA$. For the two least-squares methods we also cross-validated the regularization parameter over 20 values. The ``output'' feature map $\phi(\cdot)$ also corresponds to a Gaussian kernel $\phi(s) = L(s,\cdot)$, and the bandwidth of $L$ was chosen using an informal search for each MDP (it is not clear how this parameter can be validated during the algorithm). For planning we set $\gamma=0.98$, but we report results for $\gamma=0.99$. \todoc{Why? This is weird and calls for an explanation.}\todog{Yes sorry this is just a legacy from previous code where LSTD is better with smaller $\gamma$. Really there are two $\gamma$s if you like, one defined by an MDP and the other is a parameter of the algorithm. You get faster contractions with smaller $\gamma$ but since we invert anyway it probably doesn't make any difference here to switch. For a final version I'll rerun with $\gamma=0.99$.}
 
 \subsection{Cart-Pole Experiment Details}
 
@@ -805,8 +791,12 @@ $$\bM_{\cS\times\cA} =\left( \begin{array}{ccc}
 
 \subsection{Quadrocopter Experiment Details}
 
-The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS =diag( 1/25 ,1/25 ,1/25, 0, 0, 0 ,1 ,1, 1, 0, 0, 0 ,0)$ (which essentially reduces the state observations to 6 dimensions), and the state-action kernel is $$K((s,a),(s',a')) = \exp\left({\frac{1}{2\sigma_{\cS\times\cA}^2}((s,a) - (s',a'))^\top \bM_{\cS\times\cA} ((s,a) - (s',a'))}\right)$$ with \todoc{Fix long lines}
-$$\bM_{\cS\times\cA} =diag( 1/25 ,1/25 ,1/25, 0, 0, 0 ,1 ,1, 1, 0, 0, 0 ,0,1/100,1/100,1/100).$$ The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 1$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
+The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS =diag( \bone/25, \bzero ,\bone, \bzero ,0)$ where $\bone = (1,1,1)$, $\bzero = (0,0,0)$ (which essentially reduces the state observations to 6 dimensions), and the state-action kernel is
+\begin{align}
+&K((s,a),(s',a')) \nn\\
+&= \hspace{-0.5mm}\exp\hspace{-0.8mm}\left({\frac{1}{2\sigma_{\cS\times\cA}^2}((s,a)\hspace{-0.8mm} - \hspace{-0.8mm}(s',a'))^\top \hspace{-0.5mm}\bM_{\cS\times\cA} ((s,a)\hspace{-0.8mm} -\hspace{-0.8mm} (s',a'))}\right)\nn
+\end{align}
+with $\bM_{\cS\times\cA} =diag(\bone /25,\bzero ,\bone,\bzero,0,  \bone/100)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 1$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
 
 
 
