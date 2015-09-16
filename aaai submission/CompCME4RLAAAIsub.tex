@@ -332,7 +332,7 @@ The model can be viewed as approximating the CME (\ref{muDef}) using kernel smoo
 where $K$ is a smoothing kernel.  \todoc{I did not double check whether this is indeed the same as what they do. But I guess it is the same..} 
 No loss function is directly specified or optimized. The induced finite transition dynamics are given by $\alpha^{KBRL}_i(s,a) :=  \frac{K((s,a),(s_i,a_i))}{\sum_{j=1}^n K((s,a),(s_j,a_j))}$ and condition (\ref{L1Constraint}) holds. The KBRL method is shown to be consistent: the learned value function will converge to the optimal value function with infinite data.
 
-One drawback of the approach is that the size of the state space of the induced MDP equals $|\cD|=n$ and planning via a solving the approximate Bellman equation (\ref{approxBellman}) scales poorly with the data. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
+One drawback of the approach is that the size of the state space of the induced MDP equals the square of $|\cD|=n$ and planning via a solving the approximate Bellman equation (\ref{approxBellman}) scales poorly with the data. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
 
 \subsubsection{Modeling Transition Dynamics with Kernel Least Squares CMEs}
 
@@ -344,7 +344,7 @@ When $\cH=\cH_K$ is a RKHS (of $\cF$-valued functions) with a kernel $K$ on $\cS
 \begin{align}
 \alpha_j^{KRLS}(s,a) &=  \sum_{i=1}^n K((s,a),(s_i,a_i)) W_{ij}  \label{KRLSalphas}
 \end{align}
-where $\bW = (\bK + \lambda \bI)^{-1}$, and $K_{ij} = K((s_i,a_i),(s_j,a_j))$ is the kernel matrix on the data. The approach to guarantee the constraint (\ref{L1Constraint}) is simply to threshold and normalize the $\alpha(s_i',a)$ for all $s_i'\in\cD$ and $a\in\cA$, however we find in practice it is better to project the weights using fast Euclidean projection to the L1-ball \citep[e.g.][]{\DuchiProjections}, followed by normalization.%However, if computationally feasible, we find it is much better in practice to project the learned next feature map $\hat\mu^{KRLS}(s,a) \approx \E[\phi(S')|s,a]$ to obtain a proper CME:
+where $\bW = (\bK + \lambda \bI)^{-1}$, and $K_{ij} = K((s_i,a_i),(s_j,a_j))$ is the kernel matrix on the data. The approach to guarantee the constraint (\ref{L1Constraint}) is simply to threshold and normalize the $\balpha(s_i',a)$ for all $s_i'\in\cD$ and $a\in\cA$, however we find in practice it is better to project the weights using fast Euclidean projection to the L1-ball \citep[e.g.][]{\DuchiProjections}, followed by normalization.%However, if computationally feasible, we find it is much better in practice to project the learned next feature map $\hat\mu^{KRLS}(s,a) \approx \E[\phi(S')|s,a]$ to obtain a proper CME:
 %\begin{align}
 %\balpha^{PKRLS}(s,a) &:= \argmin_{\bbeta \in \R^n} || \hat\mu^{KRLS}(s,a) - \sum_{j=1}^n \beta_j  \phi(s'_j)  ||_{\cF}, \nn\\
 %&=\argmin_{\bbeta \in \R^n} || \sum_{j=1}^n \alpha_j^{KRLS}(s,a) \phi(s'_j) - \sum_{j=1}^n \beta_j  \phi(s'_j)  ||_{\cF}, \label{projectedAlpha} \\
@@ -436,10 +436,12 @@ where with slight abuse of notation we redefine $\bW^{CMP}$ to have dimension $d
 \end{align}
 where $K_{jk} = K((\hat s_j,\hat a_j),(\hat s_k,\hat a_k))$, $\Psi_{ij} = K((s_i,a_i),(\hat s_j,\hat a_j))$, $L_{jk}^{DC} = \lang \phi(s'_j) , \phi(c_k) \rang_{\cF}$ and $L_{jk}^{CC} = \lang \phi(c_j) , \phi(c_k) \rang_{\cF}$, and $\lambda$ can be cross validated. Computing (\ref{compressedWformula}) is efficient since the inverse is of a $d\times d$ matrix. We add a small ridge term to the kernel matrix inverses to prevent numerical instability. 
 
-To ensure a contraction we obtain the proper CME $\hat\mu^{PCMP}(\cdot)$ by projecting the learned weights to the L1-ball: denoting ${\rm proj}(f)\hspace{-0.5mm}:=\hspace{-0.5mm}\argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1}\hspace{-0.3mm} || f \hspace{-0.3mm}-\hspace{-0.3mm} \sum_{j=1}^m \beta_j  \phi(c_j)  ||_{\cF}$ we set $\balpha^\bot(s,a) := {\rm proj}(\hat \mu^{CMP}(s,a) )$, which can be done using a Lasso (see Appendix~\ref{LassoSec}), and finally we normalize,\todoc{This is confusing. Is it because of numerical issues? Anyhow, this must be explained.}\todog{It makes the pseudo-MDP closer to an MDP. I think what happens otherwise maybe that some regions $||\balpha(s,a)||_1$ is very small, and everything degenerates, and its practically better to just to enforce an actual MDP. I don't think its a numerical thing -- I don't get singularity errors without it.}
+To ensure a contraction we obtain the proper CME $\hat\mu^{PCMP}(\cdot)$ by projecting the learned weights to the L1-ball: denoting ${\rm proj}(f)\hspace{-0.5mm}:=\hspace{-0.5mm}\argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1}\hspace{-0.3mm} || f \hspace{-0.3mm}-\hspace{-0.3mm} \sum_{j=1}^m \beta_j  \phi(c_j)  ||_{\cF}$ we set $\balpha^\bot(s,a) := {\rm proj}(\hat \mu^{CMP}(s,a) )$, which can be done using a Lasso (see Appendix~\ref{LassoSec}), and finally we normalize:
 \begin{align}
 \balpha^{PCMP}(s,a):=\balpha^\bot(s,a)/||\balpha^\bot(s,a)||_1.\label{CompProjAlpha}
 \end{align}
+\todoc[inline]{I wish we could add a sentence to explain normalization, something like:
+Normalization, while not necessary for stability, is expected to help as in the long run $\balpha^{PCMP}$ is expected to have a norm close to one.}
 
 \subsection{Policy Iteration with Compressed CMEs}
 
@@ -937,7 +939,7 @@ We specialize to the case that $\cH=\R^d$ for simplicity. Solving (\ref{regBLoss
 \begin{align}
 \mu^*(s,a) = \psi(s,a)^\top \sum_{i=1}^n \bw_i \phi(s'_i) = \sum_{i=1}^n \alpha_i(s,a)\phi(s_i'), \nn
 \end{align}
-where $\alpha(s,a) = \psi(s,a)^\top \bW$, and the $d\times n$ matrix $\bW = \left( \bw_1, \bw_2, ... , \bw_n \right)$ must be optimized. The following equivalent form will be useful (the derivation is in the Appendix):
+where $\balpha(s,a) = \psi(s,a)^\top \bW$, and the $d\times n$ matrix $\bW = \left( \bw_1, \bw_2, ... , \bw_n \right)$ must be optimized. The following equivalent form will be useful (the derivation is in the Appendix):
 
 \begin{theorem} \label{MatrixLoss}
 When $B=\sum_{i=1}^n\phi(s_i')\bw_i^\top$, minimizing (\ref{regBLoss}) is equivalent to minimizing the loss
@@ -1005,7 +1007,7 @@ Since we are interested in finding a compression set which preserves value funct
 
 \subsection{constrained compressed kernel approach}
 
-We first suppose that a good compression set $\cC$ is known and consider solving a CME of the form $\mu(s,a) = \sum_{j=1}^m \alpha_j(s,a) \phi(c_j)$, where $\alpha(s,a) = \psi(s,a)^\top \bW$. We are interested in the following optimization problem for the model
+We first suppose that a good compression set $\cC$ is known and consider solving a CME of the form $\mu(s,a) = \sum_{j=1}^m \alpha_j(s,a) \phi(c_j)$, where $\balpha(s,a) = \psi(s,a)^\top \bW$. We are interested in the following optimization problem for the model
 \begin{align}
 &\argmin_{\bW} \frac{1}{n} \sum_{i=1}^n|| \psi(s_i,a_i)^\top \bW \bPhi_{\cC}  - \phi(s_i') ||^2_{\cF} + \lambda||\bW \bPhi_{\cC}||^2_{\cH\otimes\cF}, \nn\\
 &\mbox{subject to }\quad\quad ||\psi(c_i,a)^\top \bW||_1\le 1  \quad \quad \mbox{ for all } i\le m \mbox{ and } a\in\cA, \label{FirstConstrainedCompressed}
