@@ -332,7 +332,7 @@ The model can be viewed as approximating the CME (\ref{muDef}) using kernel smoo
 where $K$ is a smoothing kernel.  \todoc{I did not double check whether this is indeed the same as what they do. But I guess it is the same..} 
 No loss function is directly specified or optimized. The induced finite transition dynamics are given by $\alpha^{KBRL}_i(s,a) :=  \frac{K((s,a),(s_i,a_i))}{\sum_{j=1}^n K((s,a),(s_j,a_j))}$ and condition (\ref{L1Constraint}) holds. The KBRL method is shown to be consistent: the learned value function will converge to the optimal value function with infinite data.
 
-One drawback of the approach is that the size of the state space of the induced MDP equals the square of $|\cD|=n$ and planning via a solving the approximate Bellman equation (\ref{approxBellman}) scales poorly with the data. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
+One drawback of the approach is that the size of the state space of the induced MDP equals $|\cD|=n$ and planning via a solving the approximate Bellman equation (\ref{approxBellman}) scales poorly with the data. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
 
 \subsubsection{Modeling Transition Dynamics with Kernel Least Squares CMEs}
 
