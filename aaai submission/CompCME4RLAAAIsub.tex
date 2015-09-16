@@ -175,7 +175,7 @@
 %}
 \maketitle
 
-\begin{abstract} We present a model-based approach to solving Markov decision processes (MDPs) in which the system dynamics are learned using conditional mean embeddings (CMEs). This class of methods comes with strong performance guarantees, and enables planning to be performed in an induced finite (pseudo-)MDP, which approximates the MDP, but can be solved exactly using dynamic programming. Two drawbacks of existing methods exist: firstly, the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, costing much memory and time when planning with the learned model; secondly, learning the CME itself using powerful kernel least-squares is costly -- a second computational bottleneck. We present an algorithm which maintains a rich kernelized CME model class, but solves both problems: firstly we demonstrate that the loss function for the CME model suggests a principled approach to \emph{compressing} the induced (pseudo-)MDP, leading to faster planning; secondly we propose to learn the CME model itself using efficient sparse-greedy kernel regression well-suited to the RL context. We demonstrate superior performance to existing methods in this class of model-based approaches on a range of MDPs.
+\begin{abstract} We present a model-based approach to solving Markov decision processes (MDPs) in which the system dynamics are learned using conditional mean embeddings (CMEs). This class of methods comes with strong performance guarantees, and enables planning to be performed in an induced finite (pseudo-)MDP, which approximates the MDP, but can be solved exactly using dynamic programming. Two drawbacks of existing methods exist: firstly, the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, costing much memory and time when planning with the learned model; secondly, learning the CME itself using powerful kernel least-squares is costly -- a second computational bottleneck. We present an algorithm which maintains a rich kernelized CME model class, but solves both problems: firstly we demonstrate that the loss function for the CME model suggests a principled approach to \emph{compressing} the induced (pseudo-)MDP, leading to faster planning, while maintaining guarantees; secondly we propose to learn the CME model itself using fast sparse-greedy kernel regression well-suited to the RL context. We demonstrate superior performance to existing methods in this class of model-based approaches on a range of MDPs.
 \end{abstract}
 
 \section{Introduction}
@@ -194,7 +194,7 @@ avoiding instability associated with approximate dynamic programming \cite[e.g.]
 
 One drawback is the fact that the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, significantly slowing down the planning step and straining the algorithm's memory requirements as more data is collected. Further, \citet{\GrunewalderEmbeddingsRL} employ non-parametric methods to learn the CME which are data efficient but computationally expensive. \todoc{Did not this paper also talk about using sparsification techniques?}\todog{Yes, I'll try to fit a discussion of this in but because of space we may have to only mention this if reviewers bring it up.}
 \todoc{What will you say? Maybe we can fit it somewhere..}
- It is therefore of interest to investigate methods for learning CMEs in RL which retain these benefits but enable efficient planning and which can be learned efficiently even for problems that require huge amounts of data to learn a good model. We present a method of learning a \emph{compressed CME} which induces a compressed finite pseudo-MDP for efficient planning, decoupling the size of data collected and the size of the induced pseudo-MDP. We optimize the CME non-parametrically but efficiently, using kernel matching pursuit.
+ It is therefore of interest to investigate methods for learning CMEs in RL which retain these benefits but enable efficient planning and which can be learned efficiently even for problems that require huge amounts of data to learn a good model. We present a method of learning a \emph{compressed CME} which induces a compressed finite pseudo-MDP for efficient planning, decoupling the amount of data collected and the size of the induced pseudo-MDP. The compression guarantees the existence of compressed CMEs maintaining good performance bounds. We optimize the CME non-parametrically but efficiently, using kernel matching pursuit.
 
 \section{Preliminaries}
 
@@ -379,7 +379,7 @@ so that the induced finite pseudo-MDP is defined on $\cC$. Details of learning s
 
 \subsection{Learning the Compression Set} \label{learningCompression}
 
-We now show that learning CME transition models for RL suggests a principled means of learning a compression set. We first introduce a useful guarantee for compression sets:
+We now show that learning CME transition models suggest a principled means of learning a compression set: our compression set will guarantee the existence of a compressed CME maintaining good guarantees via Theorem~\ref{ICMLtheorem}. We first introduce a useful property of compression sets:
 
 \begin{definition} \label{lossyCompression}
 Given any set $\cP = \{s'_j\}_{j=1}^n$, and any small error $\delta$, a compression set $\cC=\{c_j\}_{j=1}^m$ is a \emph{$\delta$-lossy compression} of $\cP$, if given any proper CME $\hat\mu(\cdot)$ of the form $\hat\mu(s,a) = \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j)$, there exists a proper CME $\hat\mu^{CMP}(s,a) = \sum_{j=1}^m \alpha^{CMP}_j(s,a) \phi(c_j)$, which approximates $\hat\mu(s,a)$ in $\cF$ in the sense that $\sup_{(s,a)\in\cS\times\cA}||\hat\mu(s,a) - \hat\mu^{CMP}(s,a)||_\cF < \delta$.
@@ -408,7 +408,7 @@ which states that if $\max_{1\le j \le n } \min_{{\bm b}\in\R^m , ||{\bm b}||_1\
  ||\sum_{i=1}^m b_i \phi(c_i)-\phi(s'_j)||_{\cF}\le \delta$ then $\{c_1,\dots,c_m\}$ is a $\delta$-lossy compression set of $\cP$.
 \end{proof}
 
-A $\delta$-lossy compression $\cC$ guarantees the \emph{existence} of a good compressed CME defined over $\cC$. The trivial Corollary~\ref{ICMLcorollary} of Theorem~\ref{ICMLtheorem} (see Appendix~\ref{learningCompressionAppendix}) further implies that if there exists a CME $\hat\mu(\cdot)$ with a good guarantee for solving (pseudo-)MDPs via Theorem~\ref{ICMLtheorem}, then given a $\delta$-lossy $\cC$ there exists a good compressed proper CME $\hat\mu^{CMP}(\cdot)$ defined over $\cC$ with almost as good a guarantee: we only pay an additional term of $\frac{2\gamma \delta||\tilde V^*||_{\cF}}{(1-\gamma^2)}$ in the bound of Theorem~\ref{ICMLtheorem} for solving an MDP with the CME $\hat\mu^{CMP}(\cdot)$ instead of the CME $\hat\mu(\cdot)$. This is an existence proof: in the following section we detail how to learn the compressed CME.
+A $\delta$-lossy compression $\cC$ guarantees the \emph{existence} of a good compressed CME defined over $\cC$. The trivial Corollary~\ref{ICMLcorollary} of Theorem~\ref{ICMLtheorem} (see Appendix~\ref{learningCompressionAppendix}) further implies that if there exists a CME $\hat\mu(\cdot)$ with a good guarantee for solving (pseudo-)MDPs via Theorem~\ref{ICMLtheorem}, then given a $\delta$-lossy $\cC$ there exists a good compressed proper CME $\hat\mu^{CMP}(\cdot)$ defined over $\cC$ with almost as good a guarantee: we only pay an additional term of $\frac{2\gamma \delta||\tilde V^*||_{\cF}}{(1-\gamma^2)}$ in the bound of Theorem~\ref{ICMLtheorem} for solving an MDP with the CME $\hat\mu^{CMP}(\cdot)$ instead of the CME $\hat\mu(\cdot)$. This is an existence proof: in the following section we detail how to learn a compressed CME.
 
 \subsection{Learning Compressed CMEs} \label{LearningCompressedModel}
 
@@ -599,12 +599,12 @@ Thus, suppose that $\hat\mu(\cdot)$ is known to be good, then comparing Corollar
 
 We begin with a lemma:
 
-\begin{lemma}\label{CMPlemma} Given $\{s'_1,s'_2,...,s'_n\}$, suppose $\cC = \{ c_1,...,c_m \}\subseteq \cS$ is such that for all $s'_i\in\cD$ there exists ${\bm b} = {\bm b}(s_j)\in\R^m$, $||\bm b||_1\le 1$ such that
+\begin{lemma}\label{CMPlemma} Given $\{s'_1,s'_2,...,s'_n\}$, suppose $\cC = \{ c_1,...,c_m \}\subseteq \cS$ is such that for all $s'_j\in\cD$ there exists ${\bm b} = {\bm b}(s'_j)\in\R^m$, $||\bm b||_1\le 1$ such that
 \begin{align}
 ||\sum_{i=1}^m b_i(s'_j) \phi(c_i) - \phi(s'_j)||_{\cF} \le \delta. \label{Ccondition}
 \end{align}
 Then let $\mu(\cdot)$ be defined via $\mu(s,a) = \sum_{j=1}^n \alpha_j(s,a) \phi(s'_j)$, with $||\balpha(s,a)||_1\le 1$ for all $(s,a)\in\cS\times\cA$. 
-If we define $\alpha^{CMP}_i(s,a)=\sum_{j=1}^n b_i(s'_j) \alpha_j(s,a)$ then $\sum |\alpha^{CMP}_i(s,a)|\le 1$ and for all $(s,a)$
+If we define $\alpha^{CMP}_i(s,a)=\sum_{j=1}^n b_i(s'_j) \alpha_j(s,a)$ then $\sum_{i=1}^m |\alpha^{CMP}_i(s,a)|\le 1$ and for all $(s,a)$
 \begin{align}
 ||\mu(s,a) - \hat\mu^{CMP}(s,a)||_\cF < \delta. \nn
 \end{align}
