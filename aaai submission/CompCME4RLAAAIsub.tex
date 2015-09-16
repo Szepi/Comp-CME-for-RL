@@ -175,7 +175,7 @@
 %}
 \maketitle
 
-\begin{abstract} We present a model-based approach to solving Markov decision processes (MDPs) in which the system dynamics are learned using conditional mean embeddings (CMEs). This class of methods comes with strong performance guarantees, while simultaneously enabling planning to be performed in an induced finite (pseudo-)MDP, which approximates the MDP, but can be solved exactly using dynamic programming. Two drawbacks of existing methods exist: firstly, the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, costing much memory and time when planning with the learned model; secondly, learning the CME itself using powerful kernel least-squares is costly -- a second computational bottleneck. We present an algorithm which maintains a rich kernelized CME model class, but solves both problems: firstly we demonstrate that the loss function for the CME model suggests a principled approach to \emph{compressing} the induced (pseudo-)MDP, leading to faster planning; secondly we propose to learn the CME model itself using efficient sparse-greedy kernel regression well-suited to the RL context. We demonstrate superior performance to existing methods in this class of model-based approaches on a range of MDPs.
+\begin{abstract} We present a model-based approach to solving Markov decision processes (MDPs) in which the system dynamics are learned using conditional mean embeddings (CMEs). This class of methods comes with strong performance guarantees, and enables planning to be performed in an induced finite (pseudo-)MDP, which approximates the MDP, but can be solved exactly using dynamic programming. Two drawbacks of existing methods exist: firstly, the size of the induced finite (pseudo-)MDP scales quadratically with the amount of data used to learn the model, costing much memory and time when planning with the learned model; secondly, learning the CME itself using powerful kernel least-squares is costly -- a second computational bottleneck. We present an algorithm which maintains a rich kernelized CME model class, but solves both problems: firstly we demonstrate that the loss function for the CME model suggests a principled approach to \emph{compressing} the induced (pseudo-)MDP, leading to faster planning; secondly we propose to learn the CME model itself using efficient sparse-greedy kernel regression well-suited to the RL context. We demonstrate superior performance to existing methods in this class of model-based approaches on a range of MDPs.
 \end{abstract}
 
 \section{Introduction}
@@ -206,7 +206,7 @@ an \emph{action space} $\cA$,
 an \emph{initial state distribution} $P_1$ over $\cS$, 
 an \emph{(immediate) reward function} $r: \cS \times \cA \to [0,1]$,
 and a stationary \emph{Markov transition kernel} $(P(s' |s,a))_{(s,a,s')\in \cS \times \cA \times \cS}$. 
-These, together with a (stationary, stochastic, Markov) policy $\pi: \cS \to \cP(\cA)$, a map from the state space to the set of distributions over the action space, gives rise to a controlled Markov chain $\xi=(S_1,A_1,S_2,A_2,\dots)$ where $S_1 \sim P_1$, $A_t \sim \pi(S_t)$ and $S_{t+1} \sim p(\cdot|S_t,A_t)$, i.e., $p$ determines the stochastic dynamics of the controlled process.
+These, together with a (stationary, stochastic, Markov) policy $\pi: \cS \to \cP(\cA)$, a map from the state space to the set of distributions over the action space, gives rise to a controlled Markov chain $\xi=(S_1,A_1,S_2,A_2,\dots)$ where $S_1 \sim P_1$, $A_t \sim \pi(S_t)$ and $S_{t+1} \sim P(\cdot|S_t,A_t)$, i.e., $P$ determines the stochastic dynamics of the controlled process.
 % $P(S_{t+1}|S_i=s_i, A_i=a_i ,\forall i\le t) = P(S_{t+1} |S_t=s_t,A_t=a_t)$; a (potentially stochastic) \emph{reward function} $R:\cS\times\cA\to \R$. We denote the mean of the reward function by $r(s,a) = \E [R(s,a)]$, and use the shorthand $P(S_{t+1} |s_t,a_t) = P(S_{t+1} |S_t=s_t,A_t=a_t) $ and 
 Generally, we will denote the successor state of $s$ by $s'$. %Given an MDP, an \emph{agent} controls a \emph{trajectory} $\xi = (s_1,a_1,s_2,a_2,...)$ through $\cS\times\cA$ by sequentially selecting the actions $a_t\in\cA$ at each time step according to a stationary \emph{policy} $\pi:\cS\to\cP(\cA)$, where $\cP(\cA)$ is the set of probability distributions on $\cA$. 
 An \emph{agent} that interacts with an MDP observes (some function) of the states and selects actions sequentially with the goal 
@@ -272,7 +272,7 @@ As we will see in Section~\ref{learningCMEs}, several approaches to learn the CM
 \begin{align}
 \hat E_{\hat\mu}(V,(s,a)) = \lang \hat \mu(s,a) , v \rang_\cF =\sum_{i=1}^n \alpha_i(s,a) V(s'_i), \label{finiteExpansion}
 \end{align}
-i.e. our estimates of conditional expectation can be computed by measuring V only on the sample points $\{ s_i'\}_{i=1}^n$. In fact $\alpha_i(s,a)$ can be viewed as the ``probability''\footnote{The $\alpha_i(s,a)$ are not necessarily positive or normalized.} of transitioning to state $s'_i$ from state-action $(s,a)$ under the learned model (and the probability of transitioning to states beyond the sample is zero). Collect $(\alpha_i(s,a))_{i=1}^n$ into the vector $\alpha(s,a)\in \R^n$.
+i.e. our estimates of conditional expectation can be computed by measuring V only on the sample points $\{ s_i'\}_{i=1}^n$. In fact $\alpha_i(s,a)$ can be viewed as the ``probability''\footnote{The $\alpha_i(s,a)$ are not necessarily positive or normalized.} of transitioning to state $s'_i$ from state-action $(s,a)$ under the learned model (and the probability of transitioning to states beyond the sample is zero). Collect $(\balpha_i(s,a))_{i=1}^n$ into the vector $\balpha(s,a)\in \R^n$.
 If, further,
 \begin{align}
 ||\alpha(s'_i,a)||_1 \le 1 \label{L1Constraint}
@@ -282,7 +282,7 @@ for all successor states $s'_i\in\cD$ and $a\in\cA$ then the approximation  $\ha
 (\hat T^\pi_{\hat \mu}V)(s)&:=  \E_{A\sim\pi(s)} [ r(s,A) + \gamma \hat E_{\hat \mu}(V, (s,A))] \nn\\
 &= \E_{A\sim\pi(s)} [ r(s,A) + \gamma \sum_{i=1}^n \alpha_i(s,A)V(s_i') ] \label{approxBellman}
 \end{align}
-is a contraction and so iterated ``backups'' $V\leftarrow \hat T^\pi_{\hat \mu}V$ will converge geometrically to a fixed point $\hat V_{\hat \mu}^{\pi}$ such that $\hat V_{\hat \mu}^{\pi} = \hat T^\pi_{\hat \mu} \hat V_{\hat \mu}^{\pi}$. The solution to the fixed point equation
+is a contraction on the sample and so iterated ``backups'' $V\leftarrow \hat T^\pi_{\hat \mu}V$ will converge to a fixed point $\hat V_{\hat \mu}^{\pi}$ such that $\hat V_{\hat \mu}^{\pi} = \hat T^\pi_{\hat \mu} \hat V_{\hat \mu}^{\pi}$. The solution to the fixed point equation
 \begin{align}
 V =  \hat T^\pi_{\hat \mu} V \label{approxFP}
 \end{align}
@@ -303,7 +303,7 @@ Although we assume value functions can be well-approximated in $\cF$, we never n
 
 \subsubsection{Performance Guarantees}\label{PerformanceGuarantees}
 
-It is possible to derive bounds on the value of the learned policy in value iteration in terms of the quality of the learned model and how well $V$ can be modeled in $\cF$. For example we have the following theorem:
+It is possible to derive bounds on the value of the learned policy in value iteration in terms of the quality of the learned model and how well $V^*$ can be modeled in $\cF$. For example we have the following theorem:
 \begin{theorem}{(\cite{\GrunewalderEmbeddingsRL}, Theorem 3.2, \citep[see also][]{\CsabaFLAM})} \label{ICMLtheorem}
 After $k$ iterations of value iteration using a proper CME $\hat\mu$ we have the following guarantee for the value of the learned policy $\pi_k$
 \begin{align}
@@ -332,7 +332,7 @@ The model can be viewed as approximating the CME (\ref{muDef}) using kernel smoo
 where $K$ is a smoothing kernel.  \todoc{I did not double check whether this is indeed the same as what they do. But I guess it is the same..} 
 No loss function is directly specified or optimized. The induced finite transition dynamics are given by $\alpha^{KBRL}_i(s,a) :=  \frac{K((s,a),(s_i,a_i))}{\sum_{j=1}^n K((s,a),(s_j,a_j))}$ and condition (\ref{L1Constraint}) holds. The KBRL method is shown to be consistent: the learned value function will converge to the optimal value function with infinite data.
 
-One drawback of the approach is that the size of the induced finite MDP equals $|\cD|=n$ and planning via a solving the approximate Bellman equation (\ref{approxBellman}) scales poorly with the data. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
+One drawback of the approach is that the size of the state space of the induced MDP equals $|\cD|=n$ and planning via a solving the approximate Bellman equation (\ref{approxBellman}) scales poorly with the data. Versions of KBRL with efficient planning have been proposed using stochastic factorization of the transition matrix of the induced finite MDP \citep{\BarretoStochasticFactorization} or a cover tree quantization of the state space \citep{\KvetonRepresentativeKBRL}.
 
 \subsubsection{Modeling Transition Dynamics with Kernel Least Squares CMEs}
 
@@ -367,7 +367,7 @@ where $\bPsi:= \left( \psi(s_1,a_1),...,\psi(s_n,a_n) \right)^\top$, $|| \bM ||^
 
 \subsubsection{Factored Linear Action Models}
 
-The approach of \cite{\CsabaFLAM} is to work in the primal and solve (\ref{muRLS}) for a particular case that $\phi:\cS\to\cF$ is a feature map to a Hilbert space $\cF$ such that $\lang\phi(s),\phi(s')\rang_{\cF} = \left\{ \begin{array}{ll} 1 & \mbox{if } s=s' \\ 0 & \mbox{otherwise} \end{array}\right.$, i.e. the limit of a Gaussian kernel as the bandwidth tends to zero, but to impose the constraint (\ref{L1Constraint}) in the optimization, rather than projection after learning. In our experience this method requires less normalization of the CME to guarantee a contraction map but can perform worse in practice, perhaps because the constraint can reduce the hypothesis class so that fewer good models are represented.
+The approach of \cite{\CsabaFLAM} is to work in the primal and solve (\ref{muRLS}) for a particular case that $\phi:\cS\to\cF$ is a feature map to a Hilbert space $\cF$ such that $\lang\phi(s),\phi(s')\rang_{\cF} = \left\{ \begin{array}{ll} 1 & \mbox{if } s=s' \\ 0 & \mbox{otherwise} \end{array}\right.$, i.e. the limit of a Gaussian kernel as the bandwidth tends to zero, but to impose the constraint (\ref{L1Constraint}) in the optimization, rather than projection after learning. In our experience this method requires less normalization of the CME to guarantee a contraction map but tends to perform worse in practice, perhaps because the constraint can reduce the hypothesis class so that fewer good models are represented.
 
 \section{Compressed CMEs for RL}  \label{Compression}
 
@@ -455,8 +455,8 @@ Our algorithm combines the compression set learning of Section~\ref{learningComp
 	\FOR {$k=1,2,...$}	 
 	 \STATE {\bf Data acquisition:} Collect $n_{\rm new}$ data points $\cD_{\rm new} = \{s_i,a_i,s'_i\}_{i=n_{k-1}+1}^{n_k}$ from behavior policy distribution $\rho^{\nu_k}$; $n_k\leftarrow n_k+n_{\rm new}$; Aggregate data: $\cD_k = \cD_{k-1}\cup\cD_{\rm new} = \{s_i,a_i,s'_i\}_{i=1}^{n_k}$. \todoc[inline]{$\rho^{\nu_k}$ was defined much earlier, also Section \ref{sec:exp} suggests a particular data collection strategy, which is different?}\todog{I deleted the earlier definition. In experiments $\rho^{\nu_k}$ is just a 50-50 mixture of the greedy policy distribution and an $\epsilon$-greedy exploratory policy distribution. I've clarified in the experiment details.}
 	 \STATE {\bf Augment compression set with new data:} $\cC_k = \mbox{augmentCompressionSet}(\cC_{k-1},\{s'_i\}_{i=n_{k-1}+1}^{n_k},\delta)$.
-	 \STATE {\bf Augment candidate feature dictionary new data:} $\cG_k = \cB_k \cup \{ K(\cdot,(s_i,a_i)) \}_{i=n_{k-1}+1}^{n_k}$
-	 \STATE {\bf Sparse basis selection:} Learn sparse basis $\cB_k = \{ K(\cdot,(\hat s_\ell,\hat a_\ell)) \}_{\ell = 1}^{d_k}$, $d_k\le d$ from candidates $\cG_k$ using matching pursuit (Section~\ref{MatchingPursuit}); Set $\psi_\ell^k(\cdot) = K((\hat s_\ell,\hat a_\ell),\cdot)$, $\bPsi_k=\left( \psi^k(s_1,a_1),...,\psi^k(s_{n_k},a_{n_k}) \right)^\top$.
+	 \STATE {\bf Augment candidate feature dictionary new data:} $\cG_k = \cB_{k-1} \cup \{ K(\cdot,(s_i,a_i)) \}_{i=n_{k-1}+1}^{n_k}$
+	 \STATE {\bf Sparse basis selection:} Learn sparse basis $\cB_k = \{ K(\cdot,(\hat s_\ell,\hat a_\ell)) \}_{\ell = 1}^{d_k}$, $d_k\le d$ from candidates $\cG_k$ using matching pursuit; Set $\psi_\ell^k(\cdot) = K((\hat s_\ell,\hat a_\ell),\cdot)$, $\bPsi_k=\left( \psi^k(s_1,a_1),...,\psi^k(s_{n_k},a_{n_k}) \right)^\top$.
 	 \STATE {\bf Backfit CME weights:} $\bW^{CMP}_k = (\bPsi_k^\top \bPsi_k + \lambda \bK)^{-1}\bPsi_k^\top\bL^{DC}(\bL^{CC})^{-1}$ as in (\ref{compressedWformula}).
 	\FOR {$\ell=1,2,...,J$}
    \STATE {\bf Policy evaluation:} Using finite pseudo-MDP dynamics $\balpha^{PCMP}(c_j,a)$ (\ref{CompProjAlpha}) for $a\in\cA$, $c_j\in\cC$ solve approximate Bellman Equation (\ref{approxBellman}) to obtain estimate $\hat V_\ell$ of $V^{\pi_k}$ at the compression points $c_j\in\cC$. Set $\hat Q_\ell(s,a) = r(s,a) + \gamma \sum_{j=1}^{|\cC_k|} \alpha^{PCMP}_j(s,a) \hat V_\ell(c_j)$.
@@ -630,7 +630,7 @@ Note that by construction the compression set returned by Algorithm~\ref{Compres
 
 \section{Experimental Details} \label{ExperimentDetails}
 
-We here give more details of the experiments for reproducibility purposes. For all MDPs the horizon of each MDP is 100, so that $n_{\rm new} = 200$ data points were added at each iteration. To perform planning at each iteration we performed $J=10$ policy evaluation/improvement steps, before returning to the MDP to collect more data. For the compressed CME the size of the sparse-greedy feature space was constrained to be no greater than $d=200$. For all 3 methods we performed 5-fold cross-validation over 10 bandwidth parameters to optimize the ``input'' kernel $K$ on $\cS\times\cA$. For the two least-squares methods we also cross-validated the regularization parameter over 20 values. The ``output'' feature map $\phi(\cdot)$ also corresponds to a Gaussian kernel $\phi(s) = L(s,\cdot)$, and the bandwidth of $L$ was chosen using an informal search for each MDP (it is not clear how this parameter can be validated during the algorithm). For planning we set $\gamma=0.98$, but we report results for $\gamma=0.99$. \todoc{Why? This is weird and calls for an explanation.}\todog{Yes sorry this is just a legacy from previous code where LSTD is better with smaller $\gamma$. Really there are two $\gamma$s if you like, one defined by an MDP and the other is a parameter of the algorithm. You get faster contractions with smaller $\gamma$ but since we invert anyway it probably doesn't make any difference here to switch. For a final version I'll rerun with $\gamma=0.99$.}
+We here give more details of the experiments for reproducibility purposes. We begin with settings common to all MDPs. The horizon of each MDP is 100, so that $n_{\rm new} = 200$ data points were added at each iteration. To perform planning at each iteration we performed $J=10$ policy evaluation/improvement steps, before returning to the MDP to collect more data. For the compressed CME the size of the sparse-greedy feature space was constrained to be no greater than $d=200$. For all 3 methods we performed 5-fold cross-validation over 10 bandwidth parameters to optimize the ``input'' kernel $K$ on $\cS\times\cA$. For the two least-squares methods we also cross-validated the regularization parameter over 20 values. The ``output'' feature map $\phi(\cdot)$ also corresponds to a Gaussian kernel $\phi(s) = L(s,\cdot)$, and the bandwidth of $L$ was chosen using an informal search for each MDP (it is not clear how this parameter can be validated during the algorithm). For planning we set $\gamma=0.98$, but we report results for $\gamma=0.99$. \todoc{Why? This is weird and calls for an explanation.}\todog{Yes sorry this is just a legacy from previous code where LSTD is better with smaller $\gamma$. Really there are two $\gamma$s if you like, one defined by an MDP and the other is a parameter of the algorithm. You get faster contractions with smaller $\gamma$ but since we invert anyway it probably doesn't make any difference here to switch. For a final version I'll rerun with $\gamma=0.99$.}
 
 \subsection{Cart-Pole Experiment Details}
 
@@ -799,10 +799,6 @@ Note that if we had not retained the loss function of \cite{\GrunewalderEmbeddin
 \fi
 
 
-\subsubsection{Constructing the Feature Dictionary}
-
-We define the dictionary $\cG_k$ adaptively at each stage, in a data-driven way. Given a kernel $K$ on $\cS\times\cA$, when encountering some transitions $\{(s_i,a_i,s'_i)\}_{i=1}^{n_{\rm new}}$ during exploration at round $k$, we set $\cG_k = \{g_i(\cdot) = K((s_i,a_i),\cdot)\}_{i=1}^{n_{\rm new}}$, as in kernel matching pursuit \citep{\BengioKernelMP}, in which case we will learn an estimator $\hat\mu(s,a) = \sum_{ij=1}^{n} \phi(s'_i) W_{ij} K((s_j,a_j),(s,a))$ which has the form of a kernel regressor, but here matching pursuit will ensure that the size of this expansion is controlled by only incorporating useful features (most columns of $\bW$ will be zero). We use Gaussian kernels in our experiments. The approach is general and the dictionary could include arbitrary real-valued functions, including, for example, those used by unsupervised learning methods.
-
 
 
 \iffalse
@@ -863,6 +859,11 @@ but in this case the projection of step 2 is not a Euclidean projection, but a p
 
 
 \section{Orphans}
+
+\subsection{Constructing the Feature Dictionary}
+
+We define the dictionary $\cG_k$ adaptively at each stage, in a data-driven way. Given a kernel $K$ on $\cS\times\cA$, when encountering some transitions $\{(s_i,a_i,s'_i)\}_{i=1}^{n_{\rm new}}$ during exploration at round $k$, we set $\cG_k = \{g_i(\cdot) = K((s_i,a_i),\cdot)\}_{i=1}^{n_{\rm new}}$, as in kernel matching pursuit \citep{\BengioKernelMP}, in which case we will learn an estimator $\hat\mu(s,a) = \sum_{ij=1}^{n} \phi(s'_i) W_{ij} K((s_j,a_j),(s,a))$ which has the form of a kernel regressor, but here matching pursuit will ensure that the size of this expansion is controlled by only incorporating useful features (most columns of $\bW$ will be zero). We use Gaussian kernels in our experiments. The approach is general and the dictionary could include arbitrary real-valued functions, including, for example, those used by unsupervised learning methods.
+
 
 
 \subsection{Online Model Updates Using  Matching Pursuit} \label{OnlineModelUpdate}
