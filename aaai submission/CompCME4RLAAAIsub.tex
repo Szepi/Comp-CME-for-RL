@@ -272,10 +272,10 @@ As we will see in Section~\ref{learningCMEs}, several approaches to learn the CM
 \begin{align}
 \hat E_{\hat\mu}(V,(s,a)) = \lang \hat \mu(s,a) , v \rang_\cF =\sum_{i=1}^n \alpha_i(s,a) V(s'_i), \label{finiteExpansion}
 \end{align}
-i.e. our estimates of conditional expectation can be computed by measuring V only on the sample points $\{ s_i'\}_{i=1}^n$. In fact $\alpha_i(s,a)$ can be viewed as the ``probability''\footnote{The $\alpha_i(s,a)$ are not necessarily positive or normalized.} of transitioning to state $s'_i$ from state-action $(s,a)$ under the learned model (and the probability of transitioning to states beyond the sample is zero). Collect $(\balpha_i(s,a))_{i=1}^n$ into the vector $\balpha(s,a)\in \R^n$.
+i.e. our estimates of conditional expectation can be computed by measuring V only on the sample points $\{ s_i'\}_{i=1}^n$. In fact $\alpha_i(s,a)$ can be viewed as the ``probability''\footnote{The $\alpha_i(s,a)$ are not necessarily positive or normalized.} of transitioning to state $s'_i$ from state-action $(s,a)$ under the learned model (and the probability of transitioning to states beyond the sample is zero). Collect $(\alpha_i(s,a))_{i=1}^n$ into the vector $\balpha(s,a)\in \R^n$.
 If, further,
 \begin{align}
-||\alpha(s'_i,a)||_1 \le 1 \label{L1Constraint}
+||\balpha(s'_i,a)||_1 \le 1 \label{L1Constraint}
 \end{align}
 for all successor states $s'_i\in\cD$ and $a\in\cA$ then the approximation  $\hat T^\pi_{\hat \mu}\hspace{-0.6mm}:\hspace{-0.6mm}\cV\hspace{-0.9mm}\to\hspace{-0.9mm}\cV$ of the Bellman operator $T^\pi$ defined by
 \begin{align}
