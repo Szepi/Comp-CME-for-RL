@@ -10,9 +10,8 @@
 \setlength{\pdfpageheight}{11in}
 \pdfinfo{
 /Title (Compressed Conditional Mean Embeddings for Model-Based Reinforcement Learning)
-/Author (Guy Lever, John Shawe-Taylor, Ronnie Stafford, Csaba Szepesv\'{a}ri)} %
-\setcounter{secnumdepth}{2}  
-
+/Author (Guy Lever, John Shawe-Taylor, Ronnie Stafford, Csaba Szepesvari)} %
+\setcounter{secnumdepth}{2}
 
 %%everything below here and before \begin{document} is added by the authors
 
@@ -323,7 +322,7 @@ It is possible to derive bounds on the value of the learned policy in value iter
 \begin{theorem}{(\citet{\GrunewalderEmbeddingsRL}, Theorem 3.2, (see also \citet{\CsabaFLAM}))} \label{ICMLtheorem}
 After $k$ iterations of value iteration using a proper CME $\hat\mu$ we have the following guarantee for the value of the learned policy $\pi_k$
 \begin{align}
-&||V^{\pi_k} \hspace{-0.6mm}-\hspace{-0.6mm} V^*||_{\infty}\le \frac{2\gamma}{(1-\gamma^2)}\Big( \gamma^k ||\hat V_1 \hspace{-0.6mm}-\hspace{-0.6mm} \hat V_0||_{\infty} \hspace{-0.6mm}+ \hspace{-0.6mm}2|| V^* \hspace{-0.6mm}-\hspace{-0.6mm} \tilde V^* ||_{\infty}  \nn\\
+&||V^{\pi_k} \hspace{-0.6mm}-\hspace{-0.6mm} V^*||_{\infty}\hspace{-0.9mm}\le \hspace{-0.7mm}\frac{2\gamma}{(1-\gamma^2)}\Big( \gamma^k ||\hat V_1 \hspace{-0.7mm}-\hspace{-0.6mm} \hat V_0||_{\infty} \hspace{-0.6mm}+ \hspace{-0.6mm}2|| V^* \hspace{-0.7mm}-\hspace{-0.6mm} \tilde V^* ||_{\infty}  \nn\\
 &\quad+\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}||\tilde V^*||_{\cF} \Big), \label{ICMLbound}
 \end{align}
 where $\hat V_k$ is the estimated value function at iteration $k$, and $\tilde V^*$ is any element of $\cF$.
@@ -433,7 +432,7 @@ Suppose proper CMEs $\bar\mu(\cdot)$ and $\hat\mu(\cdot)$ are such that
 \end{align}
 Then after $k$ iterations of value iteration using a  $\bar\mu(\cdot)$ we have the following guarantee for the value of the learned policy $\bar\pi_k$
 \begin{align}
-&||V^{\bar\pi_k} \hspace{-0.5mm}-\hspace{-0.5mm} V^*||_{\infty}\le \hspace{-0.5mm} \frac{2\gamma}{(1-\gamma^2)}\Big( \gamma^k ||\hat V_1\hspace{-0.5mm} -\hspace{-0.5mm} \hat V_0||_{\infty} \hspace{-0.5mm}+\hspace{-0.5mm} 2|| V^* \hspace{-0.5mm}- \hspace{-0.5mm}\tilde V^* ||_{\infty}  \nn\\
+&||V^{\bar\pi_k} \hspace{-0.5mm}-\hspace{-0.5mm} V^*||_{\infty}\hspace{-0.6mm}\le \hspace{-0.6mm} \frac{2\gamma}{(1-\gamma^2)}\Big(\hspace{-0.4mm} \gamma^k ||\hat V_1\hspace{-0.5mm} -\hspace{-0.5mm} \hat V_0||_{\infty} \hspace{-0.5mm}+\hspace{-0.5mm} 2|| V^* \hspace{-0.8mm}- \hspace{-0.5mm}\tilde V^* ||_{\infty}  \nn\\
 &+\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}||\tilde V^*||_{\cF} + \delta||\tilde V^*||_{\cF} \Big), \label{CMPbound}
 \end{align}
 where $\hat V_k$ is the estimated value function at iteration $k$, and $\tilde V^*$ is any element of $\cF$.
@@ -450,7 +449,7 @@ i.e. similar to \citet{\GrunewalderEmbeddingsRL}, but with a compressed represen
 is prohibitively expensive to compute, and so we optimize $\bW^{CMP}$ using  kernel matching pursuit \citep{\BengioKernelMP,\MallatMatchingPursuit} which is an incremental \todoc{In what sense? Any paper that makes a firm claim on this? Is this an empirical or a theoretical statement?}\todog{Its just sparse by construction. Maybe I misunderstand?} \todoc{I swapped efficient for incremental. Do we want to make any claims about its efficiency?}
 sparse-greedy method of optimizing kernel least squares. In our application matching pursuit maintains a \emph{sparse basis} of kernel functions $\cB = \{ K(\cdot,(\hat s_\ell,\hat a_\ell)) \}_{\ell=1}^d$ and $d\times m$ weight matrix $\bW^{MP} = (\bw_1,...,\bw_d)^\top$, where for each $\ell$, $(\hat s_\ell, \hat a_\ell)\in\cD$, and where $d\ll n$, such that (\ref{compressedAlphas}) is represented only using the basis $\cB$: $\alpha_j^{MP}(s,a)=  \sum_{\ell=1}^d K((s,a),(\hat s_\ell,\hat a_\ell)) W^{MP}_{\ell j}$. Matching pursuit incrementally adds bases $K(\cdot,(\hat s_\ell,\hat a_\ell))$ and weights $\bw_\ell\in\R^m$ ``greedily'' -- i.e. to maximally reduce the loss (\ref{EmpMuObjective}),
 \begin{align}
-\frac{1}{n}\sum_{i=1}^n ||\sum_{\ell=1}^d\sum_{j=1}^m K((s_i,a_i),(\hat s_\ell,\hat a_\ell)) W^{MP}_{\ell j}\phi(c_j)\hspace{-0.6mm} - \hspace{-0.6mm}\phi(s'_i) ||^2_\cF.\nn
+\frac{1}{n}\sum_{i=1}^n \hspace{-0.5mm}||\hspace{-0.5mm}\sum_{\ell=1}^d\sum_{j=1}^m K((s_i,a_i),(\hat s_\ell,\hat a_\ell)) W^{MP}_{\ell j}\phi(c_j)\hspace{-0.6mm} - \hspace{-0.6mm}\phi(s'_i) ||^2_\cF.\nn
 \end{align}
 Given the next basis element, each new weight $\bw_\ell$ can be found in closed form, and so each addition of a (basis,weight) pair requires a sweep over all candidate basis points. There are some non-standard aspects of the application of matching pursuit to optimize $\bW^{CMP}$ and details are included in Appendix~\ref{MatchingPursuit}, where we demonstrate for instance that $\cF$ can be an infinite-dimensional feature space of an RKHS and yet we can still perform matching pursuit efficiently. The greedy incremental approach is suited to the RL setting since we interact with the system to gather new data, which is then explored by matching pursuit to discover new basis functions, but we do not sweep over the full data set at each iteration (see Algorithm~\ref{PIwCMEfeatures} for details).
 
@@ -599,6 +598,18 @@ We have presented a model-based policy iteration algorithm, based on learning a 
 Other arbitrary choices:
 New compression points are looked at the new data only, why?}\todog{Yes. Lets perhaps add later when we get more space.}
 
+
+
+%\clearpage
+\begin{small}
+%\fontsize{9.5pt}{10.5pt} \selectfont
+\bibliographystyle{aaai}
+\bibliography{cme4mdp}
+%\bibliographystyle{apalike}
+%\bibliographystyle{abbrv}
+\end{small}
+%\fontsize{10pt}{12pt} \selectfont
+
 \appendix
 \section*{Appendix}
 \section{Proof of Theorem~\ref{CompressionTheorem}} \label{learningCompressionAppendix}
@@ -675,16 +686,6 @@ The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{-1}{2\sigma_{\cS}^2}(
 with $\bM_{\cS\times\cA} =diag(\bone /5,\bone/10^5 ,\bone,\bone/10^5,0,  \bone/100)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 1$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
 
 
-
-%\clearpage
-%\begin{small}
-\fontsize{9.5pt}{10.5pt} \selectfont
-\bibliographystyle{aaai}
-\bibliography{cme4mdp}
-%\bibliographystyle{apalike}
-%\bibliographystyle{abbrv}
-%\end{small}
-\fontsize{10pt}{12pt} \selectfont
 
 \clearpage
 
