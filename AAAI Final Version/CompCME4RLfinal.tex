@@ -14,18 +14,16 @@
 \setcounter{secnumdepth}{2}  
 
 
-
-
-%%everything below and before \begin{document} is added by the authors
+%%everything below here and before \begin{document} is added by the authors
 
 %% we are allowed to "minimally" make these spacing changes
 
-\setlength\abovecaptionskip{0.2mm}
-\setlength\belowcaptionskip{0mm}
-\setlength\abovedisplayskip{0.2mm}
-\setlength\belowdisplayskip{0.2mm}
-\setlength\floatsep{0mm}
-\setlength\textfloatsep{0.3mm}
+\setlength\abovecaptionskip{0.6mm}
+\setlength\belowcaptionskip{0.6mm}
+\setlength\abovedisplayskip{0.7mm}
+\setlength\belowdisplayskip{0.7mm}
+%\setlength\floatsep{0mm}
+\setlength\textfloatsep{0.7mm}
 
 %% Csaba's commands
 %\usepackage[backgroundcolor = White]{todonotes}
@@ -468,9 +466,13 @@ where with slight abuse of notation we redefine $\bW^{CMP}$ to have dimension $d
 \end{align}
 where $K_{jk} = K((\hat s_j,\hat a_j),(\hat s_k,\hat a_k))$, $\Psi_{ij} = K((s_i,a_i),(\hat s_j,\hat a_j))$, $L_{jk}^{DC} = \lang \phi(s'_j) , \phi(c_k) \rang_{\cF}$ and $L_{jk}^{CC} = \lang \phi(c_j) , \phi(c_k) \rang_{\cF}$, and $\lambda$ can be cross validated. Computing (\ref{compressedWformula}) is efficient since the inverse is of a $d\times d$ matrix. We add a small ridge term to the kernel matrix inverses to prevent numerical instability. 
 
-To ensure a contraction we obtain the proper CME $\hat\mu^{PCMP}(\cdot)$ by projecting the learned weights to the L1-ball: denoting ${\rm proj}(f)\hspace{-0.5mm}:=\hspace{-0.5mm}\argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1}\hspace{-0.3mm} || f \hspace{-0.3mm}-\hspace{-0.3mm} \sum_{j=1}^m \beta_j  \phi(c_j)  ||_{\cF}$ we set $\balpha^\bot(s,a) := {\rm proj}(\hat \mu^{CMP}(s,a) )$, which can be done using a Lasso (see Appendix~\ref{LassoSec}), and finally we normalize,\todoc{This is confusing. Is it because of numerical issues? Anyhow, this must be explained.}\todog{It makes the pseudo-MDP closer to an MDP. I think what happens otherwise maybe that some regions $||\balpha(s,a)||_1$ is very small, and everything degenerates, and its practically better to just to enforce an actual MDP. I don't think its a numerical thing -- I don't get singularity errors without it.}
+To ensure a contraction we obtain the proper CME $\hat\mu^{PCMP}(\cdot)$ by projecting the learned weights to the L1-ball: denoting ${\rm proj}(f)\hspace{-0.5mm}:=\hspace{-0.5mm}\argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1}\hspace{-0.3mm} || f \hspace{-0.3mm}-\hspace{-0.3mm} \sum_{j=1}^m \beta_j  \phi(c_j)  ||_{\cF}$ we set
 \begin{align}
-\balpha^{PCMP}(s,a):=\balpha^\bot(s,a)/||\balpha^\bot(s,a)||_1.\label{CompProjAlpha}
+\balpha^\bot(s,a) := {\rm proj}(\hat \mu^{CMP}(s,a) ),\label{CompProjAlpha}
+\end{align}
+which can be done using a Lasso (see Appendix~\ref{LassoSec}), and finally we normalize,\todoc{This is confusing. Is it because of numerical issues? Anyhow, this must be explained.}\todog{It makes the pseudo-MDP closer to an MDP. I think what happens otherwise maybe that some regions $||\balpha(s,a)||_1$ is very small, and everything degenerates, and its practically better to just to enforce an actual MDP. I don't think its a numerical thing -- I don't get singularity errors without it.}
+\begin{align}
+\balpha^{PCMP}(s,a):=\balpha^\bot(s,a)/||\balpha^\bot(s,a)||_1.\label{NormAlpha}
 \end{align}
 
 \subsection{Policy Iteration with Compressed CMEs}
@@ -491,7 +493,7 @@ Our algorithm combines the compression set learning of Section~\ref{learningComp
 	 \STATE {\bf Sparse basis selection:} Learn sparse basis $\cB_k = \{ K(\cdot,(\hat s_\ell,\hat a_\ell)) \}_{\ell = 1}^{d_k}$, $d_k\le d$ from candidates $\cG_k$ using matching pursuit; Set $\psi_\ell^k(\cdot) = K((\hat s_\ell,\hat a_\ell),\cdot)$, $\bPsi_k=\left( \psi^k(s_1,a_1),...,\psi^k(s_{n_k},a_{n_k}) \right)^\top$.
 	 \STATE {\bf Backfit CME weights:} $\bW^{CMP}_k = (\bPsi_k^\top \bPsi_k + \lambda n \bK)^{-1}\bPsi_k^\top\bL^{DC}(\bL^{CC})^{-1}$ as in (\ref{compressedWformula}).
 	\FOR {$\ell=1,2,...,J$}
-   \STATE {\bf Policy evaluation:} Using finite pseudo-MDP dynamics $\balpha^{PCMP}(c_j,a)$ (\ref{CompProjAlpha}) for $a\in\cA$, $c_j\in\cC$ solve approximate Bellman Equation (\ref{approxBellman}) to obtain estimate $\hat V_\ell$ of $V^{\pi_k}$ at the compression points $c_j\in\cC$. Set $\hat Q_\ell(s,a) = r(s,a) + \gamma \sum_{j=1}^{|\cC_k|} \alpha^{PCMP}_j(s,a) \hat V_\ell(c_j)$.
+   \STATE {\bf Policy evaluation:} Using finite pseudo-MDP dynamics $\balpha^{PCMP}(c_j,a)$ (\ref{NormAlpha}) for $a\in\cA$, $c_j\in\cC$ solve approximate Bellman Equation (\ref{approxBellman}) to obtain estimate $\hat V_\ell$ of $V^{\pi_k}$ at the compression points $c_j\in\cC$. Set $\hat Q_\ell(s,a) = r(s,a) + \gamma \sum_{j=1}^{|\cC_k|} \alpha^{PCMP}_j(s,a) \hat V_\ell(c_j)$.
 	 \STATE {\bf Policy improvement:} $\pi_{k} \leftarrow \greedy(\hat Q_\ell)$. 
    \ENDFOR
 	 \STATE $\pi_{k+1} \leftarrow \pi_{k} $.
@@ -500,19 +502,12 @@ Our algorithm combines the compression set learning of Section~\ref{learningComp
 \end{algorithm}
 }
 
-\iffalse
-Some notes on the algorithm:
-\begin{enumerate}
-\item The behavior policy distribution can simply be the on-policy distribution, $\rho^{\nu_k} = \rho^{\pi_k}$, or a mixture of the on-policy and an exploratory distribution, for example.
-\item The dimensionality $d$ of the sparse basis is set as an input to the algorithm, so that kernel matching pursuit terminates once at most $d$ basis functions are found. The method could be made adaptive by setting a tolerance parameter such that sparse bases are added if the matching pursuit residue is reduced by more than the tolerance. We found it easier to set a reasonable value for $d$ motivated by computational time budget.
-\end{enumerate}
-\fi
 
 \section{Experiments}
 \label{sec:exp}
 
 We summarize the experimental results. For reproducibility more detail is given in Appendix~\ref{ExperimentDetails}. We compared our compressed CME method to the KBRL algorithm \citep{\OrmoneitKBRL} and the full kernel least-squares method of \citet{\GrunewalderEmbeddingsRL}. We outperformed the full KBRL method, in terms of the quality of the learned policy, so did not compare to the more efficient versions of KBRL which do not report better performance. \todoc{Actually, as far as I remember Kveton also says that they method improves the policies, not only computation. This is entirely possible, e.g., maybe they avoid overfitting. Anyhow, needs to be double checked and then maybe we add a remark.}\todog{Both efficient KBRL papers report worse results for smaller $m$. Shall I add this?}
-We report mean results over 10 runs of each experiment, and standard error. Experiments are run on a single-core cluster which is slow: timing results would be 2-3 times faster on a standard desktop. For all MDPs, at each iteration the learners were given 2 trajectories of data: one from the current greedy policy and a second from an $\epsilon$-greedy ($\epsilon = 0.3$) ``exploratory'' version (defining $\rho^{\nu_k}$ in the algorithm as a mixture of those two policies).
+We report mean results over 10 runs of each experiment, and standard error. Experiments are run on a cluster of single core processors, which is slow: timing results would be 2-3 times faster on a standard desktop. For all MDPs, at each iteration the learners were given 2 trajectories of data: one from the current greedy policy and a second from an $\epsilon$-greedy ($\epsilon = 0.3$) ``exploratory'' version (defining $\rho^{\nu_k}$ in the algorithm as a mixture of those two policies).
 
 \subsubsection{Benchmarks}
 
@@ -606,18 +601,6 @@ New compression points are looked at the new data only, why?}\todog{Yes. Lets pe
 
 \appendix
 \section*{Appendix}
-\section{The Weight Projection via Lasso} \label{LassoSec}
-
-Projections of the following form
-\begin{align}
-{\rm proj}(\balpha) = \argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1} || \sum_{j=1}^m \alpha_j \phi(s_j) - \sum_{j=1}^m \beta_j  \phi(s_j)  ||_{\cF}. \label{ProjProb}
-\end{align}
-are used throughout the method to maintain compression sets and project weights to obtain propoer CMEs. Problem (\ref{ProjProb}) can be reduced to:
-\begin{align}
-{\rm proj}(\balpha)  = \argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1} || \bR \bbeta - \bR \balpha ||_2. \nn
-\end{align}
-where $\bR^\top \bR = \bL$, and $L_{ij} = \lang \phi(s_i), \phi(s_j)\rang_\cF$, which can be solved with Lasso \citep{\TibshiraniLasso}. Note that the feature vectors do not need to be computed -- the Gram matrix is all that is needed. $\bR$ can be an incomplete  (low-rank) Cholesky decomposition \citep{\ShaweTaylorBook} of $\bL$ with few rows, so that the effective number of ``data points'' in the Lasso is small, and therefore efficient. For example we use an incomplete Cholesky factorization with $200$ rows in our experiments.
-
 \section{Proof of Theorem~\ref{CompressionTheorem}} \label{learningCompressionAppendix}
 
 We begin with a lemma:
@@ -650,8 +633,19 @@ and,
 
 Note that by construction the compression set returned by Algorithm~\ref{CompressionRoutine} satisfies condition (\ref{Ccondition}) and is therefore a $\delta$-lossy compression. Hence Lemma~\ref{CMPlemma} directly implies Theorem~\ref{CompressionTheorem}.
 
+\section{The Weight Projection via Lasso} \label{LassoSec}
 
-\section{Experimental Details} \label{ExperimentDetails}
+Projections of the following form
+\begin{align}
+{\rm proj}(\balpha) = \argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1} || \sum_{j=1}^m \alpha_j \phi(s_j) - \sum_{j=1}^m \beta_j  \phi(s_j)  ||_{\cF}. \label{ProjProb}
+\end{align}
+are used throughout the method to maintain compression sets and project weights to obtain propoer CMEs. Problem (\ref{ProjProb}) can be reduced to:
+\begin{align}
+{\rm proj}(\balpha)  = \argmin_{\bbeta \in \R^m, ||\bbeta||_1\le 1} || \bR \bbeta - \bR \balpha ||_2. \nn
+\end{align}
+where $\bR^\top \bR = \bL$, and $L_{ij} = \lang \phi(s_i), \phi(s_j)\rang_\cF$, which can be solved with Lasso \citep{\TibshiraniLasso}. Note that the feature vectors do not need to be computed -- the Gram matrix is all that is needed. $\bR$ can be an incomplete  (low-rank) Cholesky decomposition \citep{\ShaweTaylorBook} of $\bL$ with few rows, so that the effective number of ``data points'' in the Lasso is small, and therefore efficient. For example we use an incomplete Cholesky factorization with $200$ rows in our experiments.
+
+\section{Further Experimental Details} \label{ExperimentDetails}
 
 We here give more details of the experiments for reproducibility purposes. We begin with settings common to all MDPs. The horizon of each MDP is 100, so that $n_{\rm new} = 200$ data points were added at each iteration. To perform planning at each iteration we performed $J=10$ policy evaluation/improvement steps, before returning to the MDP to collect more data. For the compressed CME the size of the sparse-greedy feature space was constrained to be no greater than $d=200$. For all 3 methods we performed 5-fold cross-validation over 10 bandwidth parameters to optimize the ``input'' kernel $K$ on $\cS\times\cA$. For the two least-squares methods we also cross-validated the regularization parameter over 20 values. The ``output'' feature map $\phi(\cdot)$ also corresponds to a Gaussian kernel $\phi(s) = L(s,\cdot)$, and the bandwidth of $L$ was chosen using an informal search for each MDP (it is not clear how this parameter can be validated during the algorithm). For planning we set $\gamma=0.98$, but we report results for $\gamma=0.99$. \todoc{Why? This is weird and calls for an explanation.}\todog{Yes sorry this is just a legacy from previous code where LSTD is better with smaller $\gamma$. Really there are two $\gamma$s if you like, one defined by an MDP and the other is a parameter of the algorithm. You get faster contractions with smaller $\gamma$ but since we invert anyway it probably doesn't make any difference here to switch. For a final version I'll rerun with $\gamma=0.99$.}
 
@@ -661,13 +655,7 @@ This problem simulates a pole attached at a pivot to a cart, and by applying for
 $$ \ddot {\theta} = \frac{g \sin(\theta) - \alpha m \ell (\dot{\theta})^2 \sin(2 \theta)/2 - \alpha \cos(\theta) u}{ 4\ell / 3 - \alpha m \ell \cos^2(\theta)}, $$
 where $g=9.8m/s^2$ is the acceleration due to gravity, $m=2kg$ is the mass of the pole, $M = 8kg$ is the mass of the cart, $\ell = 0.5m$ is the length of the pole and $\alpha = 1/(m+M)$. We choose $\Delta_t = 0.1s$. Rewards $R(s,a) = \frac{1+ \cos(\theta)}{2}$, the discount factor is $\gamma = 0.99$, the horizon is $H=100$, and the pole begins in the downwards position, $s_0 = (\pi,0)$.
 
-The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS =\left( \begin{array}{cc}
-1 & 0 \\
-0 & 1/4 \end{array} \right)$, and the state-action kernel is  $K((s,a),(s',a')) = \exp\left({\frac{1}{2\sigma_{\cS\times\cA}^2}((s,a) - (s',a'))^\top \bM_{\cS\times\cA} ((s,a) - (s',a'))}\right)$ with
-$$\bM_{\cS\times\cA} =\left( \begin{array}{ccc}
-1 & 0 & 0\\
-0 & 1/4 & 0\\
-0 & 0 & 1/10000 \end{array} \right).$$ The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 0.5$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
+The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{-1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS = diag(1,1/4)$, and the state-action kernel is  $K((s,a),(s',a')) = \exp\left({\frac{-1}{2\sigma_{\cS\times\cA}^2}((s,a) - (s',a'))^\top \bM_{\cS\times\cA} ((s,a) - (s',a'))}\right)$ with $\bM_{\cS\times\cA} = diag(1,1/4,1/10000)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 0.5$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
 
 Cumulative reward of 50 is a near optimal policy in which the pole is quickly swung up and balanced for the entire episode. Cumulative reward of 40 to 45 indicates that the pole is swung up and balanced, but either not optimally quickly, or that the controller is unable to balance the pole for the entire remainder of the episode. 
 
@@ -675,25 +663,16 @@ Cumulative reward of 50 is a near optimal policy in which the pole is quickly sw
 
 In this problem the agent controls a car located at the bottom of a valley and the objective is to drive to the top of a hill but does not have enough power to achieve this directly and must climb the opposite hill a short distance before accelerating toward the goal (see e.g. \citet{\SinghEligibility}). States $s =(x,v)$ are position and velocity, $\cS=(-1.2,0.7)\times(-0.07,0.07)$, $\cA=\{-1,0,1\}$ and $r(s,a) = e^{-8(x-0.6)^2} $ and $s_0 = (-0.5,0)$. Dynamics are $x' = x+v+\epsilon_1$, $v' = v + 0.001a -0.0025 \cos(3 x) + \epsilon_2/10$, where $\epsilon_1, \epsilon_2$ are Gaussian random variables with standard deviation $0.02$. If $x'>0.6$ then the state is set to $(0.6,0)$. For a horizon $H=100$ the optimal return is around 45. Doing nothing receives almost no reward. 
 
-The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS =\left( \begin{array}{cc}
-1 & 0 \\
-0 & 1/100  \end{array} \right)$, and the state-action kernel is  $K((s,a),(s',a')) = \exp\left({\frac{1}{2\sigma_{\cS\times\cA}^2}((s,a) - (s',a'))^\top \bM_{\cS\times\cA} ((s,a) - (s',a'))}\right)$ with
-$$\bM_{\cS\times\cA} =\left( \begin{array}{ccc}
-1 & 0 & 0\\
-0 & 1/100 & 0\\
-0 & 0 & 1/25\end{array} \right).$$ The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 0.5$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.01$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.01$.
-
-
-
+The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{-1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS = diag(1,100)$, and the state-action kernel is  $K((s,a),(s',a')) = \exp\left({\frac{-1}{2\sigma_{\cS\times\cA}^2}((s,a) - (s',a'))^\top \bM_{\cS\times\cA} ((s,a) - (s',a'))}\right)$ with $\bM_{\cS\times\cA} = diag(1,100,1/25)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 0.5$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.01$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.01$.
 
 \subsection{Quadrocopter Experiment Details}
 
-The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS =diag( \bone/25, \bzero ,\bone, \bzero ,0)$ where $\bone = (1,1,1)$, $\bzero = (0,0,0)$ (which essentially reduces the state observations to 6 dimensions), and the state-action kernel is
+The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{-1}{2\sigma_{\cS}^2}(s - s')^\top \bM_\cS (s - s')}\right)$ with $\bM_\cS =diag( \bone/5, \bone/10^5 ,\bone, \bone/10^5 ,0)$ where $\bone = (1,1,1)$, (which essentially reduces the state observations to 6 dimensions), and the state-action kernel is
 \begin{align}
 &K((s,a),(s',a')) \nn\\
-&= \hspace{-0.5mm}\exp\hspace{-0.8mm}\left({\frac{1}{2\sigma_{\cS\times\cA}^2}((s,a)\hspace{-0.8mm} - \hspace{-0.8mm}(s',a'))^\top \hspace{-0.5mm}\bM_{\cS\times\cA} ((s,a)\hspace{-0.8mm} -\hspace{-0.8mm} (s',a'))}\right)\nn
+&= \hspace{-0.5mm}\exp\hspace{-0.8mm}\left({\frac{-1}{2\sigma_{\cS\times\cA}^2}((s,a)\hspace{-0.8mm} - \hspace{-0.8mm}(s',a'))^\top \hspace{-0.5mm}\bM_{\cS\times\cA} ((s,a)\hspace{-0.8mm} -\hspace{-0.8mm} (s',a'))}\right)\nn
 \end{align}
-with $\bM_{\cS\times\cA} =diag(\bone /25,\bzero ,\bone,\bzero,0,  \bone/100)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 1$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
+with $\bM_{\cS\times\cA} =diag(\bone /5,\bone/10^5 ,\bone,\bone/10^5,0,  \bone/100)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 1$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
 
 
 
@@ -709,7 +688,9 @@ with $\bM_{\cS\times\cA} =diag(\bone /25,\bzero ,\bone,\bzero,0,  \bone/100)$. T
 
 \clearpage
 
+\section*{Supplementary Material}
 
+The following sections are supplementary to the published AAAI version of this paper.
 
 \section{Additional Details of the Feature Selection Process}\label{MatchingPursuit}
 
@@ -782,235 +763,5 @@ is minimized w.r.t $\psi^{\rm new}(\cdot)\in\cG$ and $\bbb^{\rm new}\in\R^p$. Bu
 \sum_{i=1}^n\hspace{-0.6mm} || \psi^{\rm new}(s_i,a_i)^\top b^{\rm new} \hspace{-0.6mm} +\hspace{-0.6mm} \sum_{j=1}^n\hspace{-0.6mm} \psi(s_i,a_i)^\top \bw_j\phi(s_j)\hspace{-0.6mm} - \hspace{-0.6mm}\phi(s_i) ||^2_\cF \nn
 \end{align}
 is minimized w.r.t. $\psi^{\rm new}(\cdot)\in\cG$ and $b^{\rm new}\in\cF$. i.e. performing matching pursuit on the low dimensional residues is an equivalent problem up to approximation error of the Cholesky decomposition and the same features will be returned if this decomposition is accurate.  In this way $d_{\rm new}$ new features can be added in time $O(d_{\rm new} p|\cG||\cD|)$, where $p$ is the rank of the incomplete Cholesky decomposition. In our experiments $p$ was set to $p=200$ by computational budget and the kernel approximation was found to be almost perfect.
-
-\iffalse
-Essentially the method finds a low-dimensional subspace of $\cF_L$, spanned by $n$ representative points which are greedily selected, on which most of the feature-mapped data points approximately reside. The application to RL is interesting since data may accumulate in certain regions of the state space, hence it is often possible to obtain a small set of good representative points and the Cholesky approach provides principled, fast means of finding the low dimensional representation. 
-
-Note that if we had not retained the loss function of \citet{\GrunewalderEmbeddingsRL} we would not be able to perform efficient feature selection in this way since the ``kernel matrix'' we would need to perform an incomplete Cholesky decomposition would be an identity matrix, and there would be no sensible low rank approximation. Equivalently each data point is mapped into feature which is perpendicular to all other data features, and so no low dimensional subspace can explain the feature mapped data.
-\fi
-
-
-
-
-\iffalse
-
-
-\section{Solving the Constrained Compressed CME problem with ADMM **needs updating**}\label{ConstCompSol}
-
-We now investigate the possibility of applying the constrained optimization approach of \citet{\CsabaFLAM} to the more general loss function of \citet{\GrunewalderEmbeddingsRL}, which admits general feature maps $\phi(\cdot)$, to obtain the ``best of both worlds''. Thus we are interested in minimizing:
-\begin{align}
-\hat\loss_{\lambda}(\bW) = \frac{1}{n} || \bPsi \bW - \bI ||^2_{Fr(\bL)} + \lambda||\bW||^2_{Fr(\bL)}, \nn
-\end{align}
-subject to the constraint
-$$||\psi(s'_i,a)^\top \bW||_1\le 1  \quad \quad \mbox{ for all } i\le n \mbox{ and } a\in\cA. $$
-This is possible, and we present the method in a more general context, with additional compression of the CME.
-
-First of all we note that the solution to the unconstrained case is $\bW = (\bPsi^\top \bPsi + \lambda \bI)^{-1} \bPsi^\top \bL_{\cD\cC}\bL_{\cC\cC}^{-1}$ which can be seen by differentiating the unconstrained objective. For the constrained case we form the augmented Lagrangian,
-\begin{align}
-&\cL_\rho(\bW,\bY,\bLambda) = \frac{1}{n} \trace\left( \bPsi \bW \bL_{\cC\cC} \bW^\top \bPsi^\top - 2\bPsi\bW\bL_{\cC\cD}  \right) \nn\\
-&\quad + \lambda  \trace\left(\bW \bL_{\cC\cC} \bW^\top\right) + \delta\left( ||\bY||_{1,\infty} \le 1 \right) + \rho||\bY-\bA^\top\bW-\bLambda||^2_{Fr}, \label{AugmentedLagrangian}
-\end{align}
-where $\delta(\cE)$ is the indicator of event $\cE$. A generic ADMM procedure \citep{\BoydADMM} for minimizing the Lagrangian (\ref{AugmentedLagrangian}) is given in Algorithm~\ref{ADMM}.\footnote{**There are several options here. I am using the ``scaled form'' and there is a choice in the order in which we do the steps. Does it matter?**}\begin{algorithm}[tb]
-   \caption{ADMM for solving the constrained compressed CME}
-   \label{ADMM}
-\begin{algorithmic}
-	 \STATE {\bf Initialize:} $\bW_0 = (\bPsi^\top \bPsi + \lambda \bI)^{-1} \bPsi^\top \bL_{\cD\cC}\bL_{\cC\cC}^{-1}$ (unconstrained minimizer\footnote{**Numerical issues with the inverse?**}), $\rho = 1$,\footnote{**How to choose?**} $\bY_0 = \bA^\top \bW_0$, $\bLambda_0 = \bZero$.
-	 \FOR {$t=1,2,...$}
-	 \STATE {\bf Step 1:} $\bW_t = \argmin_{\bW} \cL_\rho(\bW,\bY_{t-1},\bLambda_{t-1})$\\
-	 \STATE {\bf Step 2:} $\bY_t = \argmin_{\bY} \cL_\rho(\bW_t,\bY,\bLambda_{t-1})$ \\
-   \STATE {\bf Step 3:} $\bLambda_t = \bLambda_{t-1} + \bA^\top\bW_t - \bY_t$ \\
-	 \ENDFOR
-\end{algorithmic}
-\end{algorithm}
-
-We discuss the steps in turn:
-
-\underline{\bf Step 1:} Setting $\nabla_{\bW} \cL(\bW,\bY,\bLambda) = 0$ gives:
-\begin{align}
- \frac{1}{n}(\bPsi^\top \bPsi \bW \bL_{\cC\cC} - \Psi^\top\bL_{\cD\cC}) + \lambda\bW\bL_{\cC\cC}  &= \rho\bA(\bY-\bA^\top\bW-\bLambda) \nn\\
-(\bPsi^\top \bPsi + n\lambda\bI)\bW \bL_{\cC\cC} + n\rho \bA\bA^\top\bW &= \bPsi^\top\bL_{\cD\cC} + n\rho\bA\bY - n\rho\bA\bLambda\nn\\
-(\bPsi^\top \bPsi + n\lambda\bI)^{-1}n\rho \bA\bA^\top \bW + \bW \bL_{\cC\cC} &= (\bPsi^\top \bPsi + n\lambda\bI)^{-1}(\bPsi^\top\bL_{\cD\cC} + n\rho\bA\bY - n\rho\bA\bLambda)
-\end{align}
-This is a Sylvester equation and, once the matrices $(\bPsi^\top \bPsi + n\lambda\bI)^{-1}n\rho \bA\bA^\top$ and $(\bPsi^\top \bPsi + n\lambda\bI)^{-1}(\bPsi^\top\bL_{\cD\cC} + n\rho\bA\bY - n\rho\bA\bLambda)$ have been computed, can be solved in time $d^3+m^3$ (i.e. the bottleneck is likely to be constructing the required matrices, rather than solving the equation).\footnote{**Need to check this. Matlab routines exist. Are there numerical issues?**} Setting $\bL_{\cC\cC} = \bL_{\cD\cC} = \bI$, $\lambda= 0$ recovers the method of \citet{\CsabaFLAM} for the special case considered therein\footnote{**There is a change of notation required: $\bW \rightarrow \bF^\top$, $n\rho \rightarrow \frac{1}{\mu}$.**}.
-
-\underline{\bf Step 2:} is a Euclidean projection to the $L_1$ unit ball and can be solved using the method of \citet{\DuchiProjections}, exactly as in as in \citet{\CsabaFLAM}.
-
-\underline{\bf Step 3:} is trivial.
-
-\subsection{Possible Problems}
-
-We may wish to avoid the Sylvester equation in favor of a closed form solution for step 1. This seems possible if we adopt a slightly different augmented Lagrangian (which may be more sensible since the penalty is taken in the RKHS norm):
-\begin{align}
-&\cL_\rho(\bW,\bY,\bLambda) = \frac{1}{n} \trace\left( \bPsi \bW \bL_{\cC\cC} \bW^\top \bPsi^\top - 2\bPsi\bW\bL_{\cC\cD}  \right)  + \lambda   \trace\left(\bW \bL_{\cC\cC} \bW^\top\right)\nn\\
-&\quad + \rho||\bY-\bA^\top\bW||^2_{Fr(\bL_{\cC\cC})} - \trace(\bLambda^\top(\bY - \bA^\top\bW))+ \delta\left( ||\bY||_{1,\infty} \le 1 \right) , \label{AugmentedLagrangian2}
-\end{align}
-but in this case the projection of step 2 is not a Euclidean projection, but a projection w.r.t. $||\bx||^2_{\bL_{\cC\cC}} = \bx^\top\bL_{\cC\cC} \bx$.\footnote{**I guess this is just as easy but a little bit of work would have to be done to use the standard projection.**}
-
-
-
-
-\section{Orphans}
-
-\subsection{Constructing the Feature Dictionary}
-
-We define the dictionary $\cG_k$ adaptively at each stage, in a data-driven way. Given a kernel $K$ on $\cS\times\cA$, when encountering some transitions $\{(s_i,a_i,s'_i)\}_{i=1}^{n_{\rm new}}$ during exploration at round $k$, we set $\cG_k = \{g_i(\cdot) = K((s_i,a_i),\cdot)\}_{i=1}^{n_{\rm new}}$, as in kernel matching pursuit \citep{\BengioKernelMP}, in which case we will learn an estimator $\hat\mu(s,a) = \sum_{ij=1}^{n} \phi(s'_i) W_{ij} K((s_j,a_j),(s,a))$ which has the form of a kernel regressor, but here matching pursuit will ensure that the size of this expansion is controlled by only incorporating useful features (most columns of $\bW$ will be zero). We use Gaussian kernels in our experiments. The approach is general and the dictionary could include arbitrary real-valued functions, including, for example, those used by unsupervised learning methods.
-
-
-
-\subsection{Online Model Updates Using  Matching Pursuit} \label{OnlineModelUpdate}
-
-It may be of interest to update the model in a faster incremental fashion rather than via the full relearn of (\ref{ModelUpdateFormula}), since Matching pursuit returns weights as well as features, this can be achieved and we detail the procedure here. Note that, for $\theta_k\in[0,1]$,
-\begin{align}
-\sum_{(s,a,s')\in\cD_k} || \cR(s,a,s') - \theta_k \hat\cR(s,a) ||^2_{\cF} \le  \sum_{(s,a,s')\in\hat\cD_k} || \cR(s,a,s') ||^2_{\cF}, \nn
-\end{align}
-since matching pursuit only adds features $\hat g_j(\cdot)\in\cG_k$ and weights $b_j\in\cF$ if they reduce the objective (\ref{MPObjective}). It is the case that
-\begin{align}
-(b_1, b_2,...,b_\ell)^\top = \bW_{\rm new} \bPhi_{k}
-\end{align}
-for some matrix $\bW_{\rm new}$. Therefore setting $\bW^\top_k =  \left( \begin{array}{cc}
- \bW_{k-1} &  \bzero  \\
-\theta_k \bW_{\rm new} \end{array} \right)$,  where $\theta_k\in[0,1]$ is a learning rate, we have that
-$\psi^k(s,a)^\top\hat\bW_k \bPhi_k =  \psi^{k-1}(s,a)^\top\hat\bW_{k-1}\bPhi_{k-1} + \theta_k \psi^{\rm new}(s,a)^\top \bW_{\rm new}\bPhi_k$, and therefore,
-\begin{align}
-\sum_{(s,a,s')\in\cD_k} || \phi(s') -\psi^k(s,a)^\top\bW_k \bPhi_k  ||^2_{\cF} &=\sum_{(s,a,s')\in\cD_k} || \cR(s,a,s') - \theta_k \hat\cR(s,a) ||^2_{\cH}\nn\\
-&\le \sum_{(s,a,s')\in\cD_k} || \phi(s') -  \psi^{k-1}(s,a)^\top\bW_{k-1} \bPhi_{k-1}||^2_{\cF} \nn
-\end{align}
-i.e. the empirical loss of the model is reduced (on $\cD_k$) by the addition of new weights and features. In practice the new matrix component $\bW_{\rm new}$ would be ``backfitted'' i.e. relearned by linear least-squares regression to fit the residue targets $\cR(s,a,s')$ on $(s,a)$ over the data (or a minibatch) using the new features $\psi^{\rm new}(\cdot)$. Since the increments $\psi^{\rm new}(\cdot)$ is a very low dimensional feature map this is closed form and fast.
-
-
-
-
-
-\subsection{Sparse-Greedy CMEs for RL using Kernel Matching Pursuit} \label{FeatureLearning}
-
-A key problem with the existing approaches discussed in Section~\ref{learningCMEs} is their ability to maintain a compact representation of state-actions suitable for the problem. In \citet{\GrunewalderEmbeddingsRL} a rich representation is possible since the non-parametric kernel regressor has an expansion on all data, but model learning therefore scales poorly with the data size. In \citet{\CsabaFLAM} a suitable compact model is assumed to be provided a-priori the learning process which is unrealistic in most practical problems.
-
-We now propose a method to incrementally construct a compact feature map $\psi(\cdot)$ on state-actions during policy optimization, in a data-driven way, essentially co-optimizing the feature representation and the model. The resulting representation will enable fast model learning, but in a rich space due to the adaptive nature of the state-action representation. Our approach uses a variant of the matching pursuit algorithm \citep{\MallatMatchingPursuit}, which is a principled and efficient sparse greedy approach to feature selection \citep{\ZhangMPConsistencey,\HussainTheoryOfMP}.
-
-Our loss function for \emph{features} will be as in (\ref{GFLoss})
-\begin{align}
-\hat\loss_{\lambda}(\bW) &= \frac{1}{n}\sum_{i=1}^n ||\sum_{j=1}^d\sum_{k=1}^n \psi_j(s_i,a_i) W_{jk}\phi(s'_k) - \phi(s'_i) ||^2_\cF\nn
-\end{align}
-i.e. we will pick features to maximally improve this loss. Suppose we have $n$ datapoints $\cD=\{s_i,a_i,s'_i\}_{i=1}^n$ and have the current feature map $\psi:\cS\times\cA\to\R^d$ and the model $\hat \mu(s,a) = \psi(s,a)^\top\bW\bPhi$. Let $\cG = \{ g_1(\cdot), g_2(\cdot),...\}$ be a dictionary of candidate functions, where each $g_j:\cS\times\cA\to\R$. We select new feature components $\psi_j(\cdot)$ greedily from $\cG$, in order to improve the dynamics model as follows. We define the \emph{model residue} $\cR:\cS\times\cA\to\cH$ of $(\psi,\bW)$ by
-\begin{align}
-\cR(s,a,s'):= \phi(s') - \psi(s,a)^\top\bW\bPhi  \in \cF, \label{ResidueDef}
-\end{align}
-for each $(s,a,s') \in \hat\cD$ where $\bPhi:=\left( \phi(s_1'),..., \phi(s'_n) \right)^\top$ which should be interpreted as a vector of functions when $\cF_L$ is an RKHS. We then use matching pursuit to regress the model residue (\ref{ResidueDef}) by selecting a small set of features $\{ \hat g_1(\cdot),...,\hat g_{d_{\rm new}}(\cdot) \} \subseteq\cG$ and weights $\{b_j \in\cF\}_{j=1}^{d_{\rm new}}$ such that $\hat\cR(\cdot) := \sum_{j=1}^{d_{\rm new}} b_j \hat g_j(\cdot) $ approximates the residue $\cR(\cdot)$ by fitting on the data $\cD$ (or a minibatch if $|\cD|$ is large),
-\begin{align}
-{\rm err}( \hat\cR ):=\sum_{(s,a,s')\in\cD} || \cR(s,a,s') -  \sum_{j=1}^{d_{\rm new}} b_j \hat g_j(s,a)  ||^2_{\cF}. \label{MPObjective} 
-\end{align}
-This is achieved by optimizing sequentially over single features and weights, adding a new feature to maximally reduce (\ref{MPObjective}) each time, until the residue cannot be significantly reduced further. We then set $\psi_i^{\rm  new}(\cdot):= \hat g_i(\cdot)$, augmenting the feature representation $\psi(\cdot) \leftarrow \left( \begin{array}{c}
-\psi(\cdot) \\
-\psi^{\rm new}(\cdot) \end{array} \right)$. The number $d_{\rm new}$ of features added is chosen by validating the regressors $\hat\cR(\cdot) := \sum_{j=1}^\ell b_j \hat g_j(\cdot)$ produced, for each $\ell$, on a held out set of residue data. Once the new feature map is obtained we relearn the dynamics model by regularized least squares on all available data, i.e. set $\bPsi = \left( \psi(s_1,a_1),...,\psi(s_n,a_n) \right)$ and update the model via,
-\begin{align}
-\bW = (\bPsi^\top \bPsi + \lambda n\bI)^{-1}\bPsi^\top \label{ModelUpdateFormula}
-\end{align}
-where $\lambda$ is validated using a hold out set. This is fast since the inversion is of a $d\times d$ matrix, but for very large problems it may be of interest to update the model online, as we discuss in Appendix~\ref{OnlineModelUpdate}. Since each new feature was added in order to maximally fit the model residue, this is equivalent to greedily reducing the model error, per feature. i.e. we co-optimize the state-action feature representation and the model by incrementally adding features to improve the model loss. In practice, after every round of feature augmentation, we sparsify our current feature map by applying matching pursuit to the current feature set to ensure we maintain as compact a set of features as possible.
-
-Since the model residue targets that we regress using matching pursuit are not real numbers but RKHS functions we need a version of the matching pursuit algorithm for the case when the targets are in general vector spaces. It is possible to perform matching pursuit in general Hilbert-space-valued regression problems since only inner products between targets, rather than the targets themselves need to be evaluated. This version of matching pursuit is detailed in Appendix~\ref{MatchingPursuit}. 
-
-
-
-
-
-
-\subsection{Learning Linear CMEs for RL} \label{LinearCME}
-
-Let us suppose that a good state-action representation $\psi:\cS\times\cA\to \cH$ is available, where $\cH$ is a feature space (in Section~\ref{FeatureLearning} we will propose a method to learn such a representation). We will focus on learning an estimate of the CME (\ref{muDef}) which is a linear map between feature spaces $\cH$ and $\cF$. Let $\Lin(\cH,\cF)$ denote the set of linear maps from $\cH$ to $\cF$. In this situation our empirical loss for $B\in\Lin(\cH,\cF)$ is
-\begin{align}
-\hat\loss(B) := \frac{1}{n}\sum_{i=1}^n ||B\psi(s_i,a_i) - \phi(s_i')||^2_{\cF}. \label{BLoss}
-\end{align}
-Since this is a regression problem we would typically add a regularizer to the empirical loss (\ref{BLoss}) to prevent overfitting. $B$ can be identified with an element of the tensor product space $\cH\otimes\cF$ which is a Hilbert space and provides a natural regularizer for $B$ via $||B||^2_{\cH\otimes\cF}$. When $\cH=\R^d$ and $\cF=\R^D$ (with Euclidean inner products) then $||B||^2_{\cH\otimes\cF}$ is the Frobenious norm $||B||^2_{Fr}$ of the matrix $B$. We obtain the regularized empirical loss,
-\begin{align}
-\hat\loss_{\lambda}(B):= \frac{1}{n}\sum_{i=1}^n || B\psi(s_i,a_i) - \phi(s_i')||^2_{\cF} + \lambda||B||^2_{\cH\otimes\cF}. \label{regBLoss}
-\end{align}
-We specialize to the case that $\cH=\R^d$ for simplicity. Solving (\ref{regBLoss}) leads to $B=\sum_{i=1}^n\phi(s_i')\bw_i^\top$ for some $\bw_i\in\R^d$ \citep{\MichelliVectorValued} and an approximate CME of the form,
-\begin{align}
-\mu^*(s,a) = \psi(s,a)^\top \sum_{i=1}^n \bw_i \phi(s'_i) = \sum_{i=1}^n \alpha_i(s,a)\phi(s_i'), \nn
-\end{align}
-where $\alpha(s,a) = \psi(s,a)^\top \bW$, and the $d\times n$ matrix $\bW = \left( \bw_1, \bw_2, ... , \bw_n \right)$ must be optimized. The following equivalent form will be useful (the derivation is in the Appendix):
-
-\begin{theorem} \label{MatrixLoss}
-When $B=\sum_{i=1}^n\phi(s_i')\bw_i^\top$, minimizing (\ref{regBLoss}) is equivalent to minimizing the loss
-\begin{align}
-\hat\loss_{\lambda}(\bW) = \frac{1}{n} || \bPsi \bW - \bI ||^2_{Fr(\bL)} + \lambda||\bW||^2_{Fr(\bL)}, \label{regWloss}
-\end{align}
-where $\bPsi:= \left( \psi(s_1,a_1),...,\psi(s_n,a_n) \right)^\top$, $|| \bM ||^2_{Fr(\bL)} := \trace(\bM\bL\bM^\top)$, and $\bL$ is the Gram matrix $L_{ij} = \lang \phi(s'_i),\phi(s'_j) \rang_{\cF}$.
-\end{theorem}
-
-
-\subsection{Linear/Kernel interpretation}
-
-The loss function (\ref{regWloss}) is equivalent to
-\begin{align}
-\hat\loss_{\lambda}(\bW) &= \frac{1}{n}\sum_{i=1}^n ||\sum_{j=1}^d\sum_{k=1}^n \psi_j(s_i,a_i) W_{jk}L(s'_k,\cdot) - L(s'_i,\cdot) ||^2_L\nn\\
-&\quad + \lambda \sum_{j=1}^d||\sum_{k=1}^n W_{jk}L(s'_k,\cdot)||^2_L, \label{GFLoss}
-\end{align}
-where $||\cdot||_L$ denotes the norm in $\cF_L$.
-
-\subsection{Proof of Theorem~\ref{MatrixLoss}}
-
-\begin{proof}[proof of Theorem~\ref{MatrixLoss}]
-\begin{align}
-&\hat\loss_{\lambda}(B) = \frac{1}{n}\sum_{i=1}^n || B\psi(s_i,a_i) - \phi(s_i')||^2_{\cF} + \lambda||B||^2_{\cH\otimes\cF} \nn \\
-&= \frac{1}{n}\sum_{i=1}^n || \sum_{j=1}^n \phi(s_j') \bw_j^\top \psi(s_i,a_i) - \phi(s_i')||^2_{\cF} + \lambda||\sum_{j=1}^n \phi(s_j') \bw_j^\top||^2_{\cH\otimes\cF} \nn\\
-&= \frac{1}{n}\sum_{i=1}^n \left( \sum_{jk=1}^n  \psi^\top(s_i,a_i)\bw_j L_{jk} \bw_k^\top \psi(s_i,a_i) - 2  \sum_{j=1}^n   \psi^\top(s_i,a_i)\bw_j L_{ji} + L_{ii} \right) + \lambda\sum_{jk=1}^n \bw_j^\top \bw_k L_{jk} \nn\\
-&= \frac{1}{n} \trace( \bPsi\bW\bL\bW^\top\bPsi^\top - \bL\bW^\top\bPsi^\top -  \bPsi\bW\bL + \bL ) + \lambda\trace(\bW\bL\bW^\top) \nn\\
-&=\hat\loss_{\lambda}(\bW)\nn
-\end{align}
-\end{proof}
-
-The solution to (\ref{regWloss}) is $\bW = (\bPsi^\top \bPsi + \lambda n \bI)^{-1}\bPsi^\top$. This appears to be independent of $\bL$, but the choice of $\bL$ may effect the validation of $\lambda$, for example. Note that at no point do we need to construct the features $\phi(s_i')$ -- we only need the inner products -- and so in principle $\cF$ can be an infinite dimensional function class.
-
-We shall see in Section~\ref{Compression} that the perspective of minimizing an explicit loss function of this form motivates a principled means of compressing the induced finite pseudo-MDP to obtain faster algorithms and, in Section~\ref{FeatureLearning}, motivates an efficient feature selection method.
-
-
-\subsection{``Model Feature -- Model Feature Learning''}
-
-\citet{\CsabaPersonalCommunication} suggested that $\phi(\cdot)$ and $\psi(\cdot)$ should be related. One special case is where $\psi(s,a) = \phi(s)\otimes\chi(a)$, for some feature map $\chi(\cdot)$ on $\cA$. By keeping ``input'' and ``output'' features related in this way we could intuitively chain the dynamics model to obtain long-term predictions. Although the feature maps do not need to coincide it seems necessary for successful chaining that $\psi(\cdot,a)\in\cF$ for each $a\in\cA$, although interestingly the performance guarantees of \citet{\GrunewalderEmbeddingsRL} do not require this.\footnote{**Perhaps this is one route to better guarantees, i.e. via obtaining accurate ``temporally extended'' models which can therefore shrink the effective horizon and learn with a lower $\gamma$.**} We should also note that the complexity of learning the model scales poorly in the dimension of $\psi(\cdot)$, but not $\phi(\cdot)$.
-
-
-
-
-\subsubsection{Unsupervised Methods (Incomplete Cholesky, Nystr\"{o}m etc.)}
-
-A straightforward approach to choosing $\cC$ would be to use  ``unsupervised'' methods which just use properties of the data $\cD$.
-
-One idea is to find a subset $\cC = \{c_1,...,c_m\}$ of the points $\{s_1',...,s_n'\}$, such that most of $\{\phi(s_1'),...,\phi(s_n')\}$ reside approximately on the $m$-dimensional subspace $\cF_\cC$ of $\cF$, spanned by $\{\phi(c_i)\}_{i=1}^m$. This can be done in a greedy fashion using an incomplete Cholesky decomposition of the Gram matrix $\bL$ \cite[see e.g.][]{\ShaweTaylorBook}. The algorithm proceeds by projecting all features on to the current subspace and adding the feature with the largest residue $||\phi(s) - \proj(\phi(s))||_{\cF}$ to the basis.\footnote{This provides an approximation $\bL \approx \bR^\top \bR$ of the $n\times n$ matrix $\bL$ where $\bR$ is a $p\times n$ matrix $\bR = ( \br_1,...,\br_n)^\top$, where $p\ll n$ can be chosen or chosen adaptively using a tolerance parameter. This approximation is often excellent \citep{\BachLowRank} and captures the inner products in $\cF_L$ since $\br_i^\top \br_j \approx L_{ij} = \lang \phi(s'_i), \phi(s'_j)\rang_L$, thus we can ``project'' the high-dimensional feature vectors $\phi(s'_i)$ to $\R^p$ via $\phi(s'_i)\mapsto \br_i$, approximately preserving inner products. We then have the following approximation for the loss function,
-\begin{align}
-\hat\loss(\bW) &= \frac{1}{n}\sum_{i=1}^n ||\sum_{j=1}^n \psi(s_i,a_i)^\top \bw_j\phi(s_j) - \phi(s_i) ||^2_\cF \nn\\
-&\approx \frac{1}{n}\sum_{i=1}^n ||\sum_{j=1}^n \psi(s_i,a_i)^\top \bw_j\br^\top_j - \br^\top _i ||^2.
-\end{align}} Note then that $\phi(s_i') \approx \sum_{j=1}^m \beta_{ij} \phi(c_j)$, so that
-\begin{align}
-V(s_i') = \lang v ,\phi(s_i')\rang_{\cF}\approx \sum_{j=1}^m  \beta_{ij} \lang v, \phi(c_j)\rang_\cF=  \sum_{j=1}^m  \beta_{ij} V(c_j) \label{preservesValue}
-\end{align}
-so that the resulting compressed representation approximately preserves value functions.
-
-A similar alternative might be the Nystr\"{o}m approximation, or sparse PCA.
-
-\subsubsection{Finding a Sparse Basis to Fit Value Functions}
-
-Since we are interested in finding a compression set which preserves value functions we could search for a set $\cC$ such that (\ref{preservesValue}) holds for each value function we are interested -- e.g. fit the value functions using sparse-greedy methods and add the new basis functions to the compression set.
-
-
-
-\subsection{constrained compressed kernel approach}
-
-We first suppose that a good compression set $\cC$ is known and consider solving a CME of the form $\mu(s,a) = \sum_{j=1}^m \alpha_j(s,a) \phi(c_j)$, where $\alpha(s,a) = \psi(s,a)^\top \bW$. We are interested in the following optimization problem for the model
-\begin{align}
-&\argmin_{\bW} \frac{1}{n} \sum_{i=1}^n|| \psi(s_i,a_i)^\top \bW \bPhi_{\cC}  - \phi(s_i') ||^2_{\cF} + \lambda||\bW \bPhi_{\cC}||^2_{\cH\otimes\cF}, \nn\\
-&\mbox{subject to }\quad\quad ||\psi(c_i,a)^\top \bW||_1\le 1  \quad \quad \mbox{ for all } i\le m \mbox{ and } a\in\cA, \label{FirstConstrainedCompressed}
-\end{align}
-where $\bPhi_{\cC} := (\phi(c_1) , ... , \phi(c_m))^\top$ which is matrix whose rows  are features (which are potentially functions).
-
-If we write $\bA:= (\bPsi_1^\top ,...,\bPsi_{|\cA|}^\top  )\in\R^{d\times m|\cA|}$ where $\bPsi_i = (\psi(c_1,a_i) , ... , \psi(c_m,a_i))^\top \in\R^{m\times d}$, and let $\bL_{\cC\cC}$ denote the matrix with $(i,j)$th entry $\lang \phi(c_i) , \phi(c_j)\rang_{\cF}$ and $\bL_{\cC\cD}$ is the matrix with $(i,j)$th entry $\lang \phi(c_i) , \phi(s'_j)\rang_{\cF}$ etc., then we can write the constrained optimization problem (\ref{FirstConstrainedCompressed}) as
-\begin{align}
-&\argmin_{\bW} \Big\{ \frac{1}{n} \trace\left( \bPsi \bW \bL_{\cC\cC} \bW^\top \bPsi^\top - 2\bPsi\bW\bL_{\cC\cD} \right) + \lambda   \trace\left(\bW \bL_{\cC\cC} \bW^\top\right) \Big\} , \nn\\
-&\mbox{subject to } \quad\quad\quad ||\bA^\top \bW ||_{1,\infty}\le 1. \label{ConstrainedCompressedProblem}
-\end{align}
-The problem (\ref{ConstrainedCompressedProblem}) generalizes \citet{\CsabaFLAM} in three ways: the addition of the regularization term; the general feature map $\phi(\cdot)$; the compressed representation of the model. \citet{\CsabaFLAM} corresponds to the case $\lambda = 0$, $\cC = \{s'_1,...,s'_n\}$ (no compression) and $\phi(s) = \delta_s(\cdot)$. Problem (\ref{ConstrainedCompressedProblem}) can be solved using ADMM. Details are given in Appendix~\ref{ConstCompSol}. The uncompressed but constrained case ($\cC = \{s'_1,...,s'_n\}$, $\bL_{\cC\cC} = \bL_{\cC\cD}$) is another special case.
-
-
-\fi
 
 \end{document}
