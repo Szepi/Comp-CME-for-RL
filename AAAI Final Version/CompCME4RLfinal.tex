@@ -71,6 +71,7 @@
 %      \hskip1.5em plus0em minus0.5em \fi \nobreak
 %      \vrule height0.75em width0.5em depth0.25em\fi}
 
+\newcommand{\supplementary}{supplementary}
 \newcommand{\vanHoofNonParametricControl}{DBLP:conf/aistats/Hoof0N15}
 \newcommand{\CsabaFLAM}{DBLP:conf/adprl/YaoSPZ14}
 \newcommand{\GrunewalderEmbeddingsRL}{GrunewalderEmbeddingsMDP}
@@ -183,7 +184,7 @@ In general the approach has the following potentially useful properties:
 \item The induced finite approximate Bellman optimality equation can be solved exactly in finite time,
 avoiding instability associated with approximate dynamic programming (e.g. \citet{\BertsekasApproximate}). As a result, planning is guaranteed to succeed.
 \item Guarantees on the value of the learned policy exist: e.g. consistency in the large data limit for the algorithm of \citet{\OrmoneitKBRL} under mild smoothness assumptions or bounds on the value of the policy learned in terms of the error of the CME \citep{\GrunewalderEmbeddingsRL,\CsabaFLAM}. 
-\item By reducing model learning to a supervised learning problem, to some extent the problem of a-priori defining a good compact representation architecture for value functions is avoided. %Here, value functions can be represented in rich reproducing kernel Hilbert space (RKHS) without explicitly constructing feature vectors.
+\item By reducing model learning to a supervised learning problem, to some extent the problem of a-priori defining a good low-dimensional representation architecture for value functions is avoided. %Here, value functions can be represented in rich reproducing kernel Hilbert space (RKHS) without explicitly constructing feature vectors.
 \todoc{But the algorithm DOES compute a value function! Take this out?}\todog{Yes OK its a bit confusing. I mention this later so have just removed it here. OK?} \todoc{Yep, I removed the last sentence.}
 \item The approach can be data-efficient since state-of-the-art non-parametric approaches can be used to approximate the CME from few data points.
 \end{inparaenum}
@@ -216,7 +217,7 @@ V^\pi(s) = \E_{A\sim\pi(s)} [ r(s,A) + \gamma \E_{S'\sim P(\cdot|s,A)} [V^\pi(S'
 \end{align}
 and the map $T^{\pi}:\cV\to\cV$, over the set $\cV$ of real-valued functions on $\cS$, defined by $(T^{\pi}V)(s):=  \E_{A\sim\pi(s)} [ r(s,A) + \gamma \E_{S'\sim P(\cdot|s,A)} [V(S')] ] $ is known as the Bellman operator for $\pi$. 
 For finite state spaces an \emph{optimal policy} can be obtained using dynamic programming methods such as value iteration \citep{\BellmanValueIt} and policy iteration \citep{\HowardPolicyIt}. In policy iteration $V^\pi$ is obtained by solving (\ref{BellmanExpectation}) for a given deterministic policy $\pi:\cS\to\cA$ followed by taking the greedy policy with respect to $V^\pi$ and iterating.
-In MDPs with large or continuous state spaces, value functions are typically represented in some approximation architecture, e.g., as a linear function in some feature space, $V^\pi(s)\approx  \lang v_\pi,\phi(s) \rang_\cF =: \hat V^\pi(s)$ where $\phi:\cS\to\cF$ is a feature map, and $\cF$ a Hilbert space. Choosing a feature map $\phi(\cdot)$ a-priori can be a problem since it is difficult to balance powerful representation ability and parsimoniousness. \todoc{We still do this. So maybe reword/clarify. Maybe RKHSs ameliorate this issue, but RKHS spaces are still quite small, or if they are big, learning will be super-slow. My view is that RKHS removes an artificial requirement that the feature map should be finite dimensional and thus increases flexibility, but this is all.}\todog{Not Sure I understand. We don't pick a compact $\cF$. I guess you can do kernel LSTD which avoids the compactness, is that what you mean? I could say hard to balance representation, compactness/computational efficiency? We don't really have that trade-off to worry about.} \todoc{We do -- see email.}
+In MDPs with large or continuous state spaces, value functions are typically represented in some approximation architecture, e.g., as a linear function in some feature space, $V^\pi(s)\approx  \lang v_\pi,\phi(s) \rang_\cF =: \hat V^\pi(s)$ where $\phi:\cS\to\cF$ is a feature map, and $\cF$ a Hilbert space. Choosing a low-dimensional feature map $\phi(\cdot)$ a-priori can be a problem since it is difficult to balance powerful representation ability and parsimoniousness. \todoc{We still do this. So maybe reword/clarify. Maybe RKHSs ameliorate this issue, but RKHS spaces are still quite small, or if they are big, learning will be super-slow. My view is that RKHS removes an artificial requirement that the feature map should be finite dimensional and thus increases flexibility, but this is all.}\todog{Not Sure I understand. We don't pick a compact $\cF$. I guess you can do kernel LSTD which avoids the compactness, is that what you mean? I could say hard to balance representation, compactness/computational efficiency? We don't really have that trade-off to worry about.} \todoc{We do -- see email.}
 Further, in the approximate case value estimation entails solving
 \begin{align}
 &\lang w_\pi , \phi(s) \rang_{\cF}\hspace{-0.5mm}\approx \hspace{-0.5mm}r(s,\pi(s)) \hspace{-0.5mm}+\hspace{-0.5mm}  \gamma \E_{S'\sim P(\cdot|s,\pi(s))} [\lang v_\pi , \phi(S')\rang_{\cF}] ,\nn
@@ -333,11 +334,11 @@ $\alpha = \|\hat V_1 - \hat V_0\|_\infty$,
  and let $\pi_k = \greedy(\hat V_k)$ be the resulting greedy policy. Then, for any  $\tilde V^*\in \cF$,
 \begin{align*}
 &||V^{\pi_k} \hspace{-0.6mm}-\hspace{-0.6mm} V^*||_{\infty}
-\le \frac{2\gamma}{1-\gamma^2}\Big( \gamma^k
+\hspace{-0.7mm}\le\hspace{-0.7mm} \frac{2\gamma}{1\hspace{-0.6mm}-\hspace{-0.6mm}\gamma^2}\Big( \gamma^k
 %	 ||\hat V_1 \hspace{-0.6mm}-\hspace{-0.6mm} \hat V_0||_{\infty} 
 	 \alpha
 	 \hspace{-0.6mm}+ \hspace{-0.6mm}2|| V^* \hspace{-0.6mm}-\hspace{-0.6mm} \tilde V^* ||_{\infty} 
-	 +\epsilon ||\tilde V^*||_{\cF} \Big)\,. %\label{ICMLbound}
+	 \hspace{-0.6mm}+\hspace{-0.6mm}\epsilon ||\tilde V^*||_{\cF}\hspace{-0.6mm} \Big). %\label{ICMLbound}
 \end{align*}
 \end{theorem}
 Theorem~\ref{ICMLtheorem} applies to any proper estimate of the CME, independently of how it is learned.\todoc{But does not this hold when $\sup_{s,a} ||\mu(s,a) - \hat\mu(s,a)||_{\cF}$ is small for similar methods? In some sense, the requirement that this is small is the same that for any policy, the value function can be well approximated. This actually follows from the previous result, does not it?}\todog{Complicated. I've sent an email, but removed this for now.}
@@ -492,7 +493,7 @@ sparse-greedy method of optimizing kernel least squares. In our application matc
 \begin{align}
 \frac{1}{n}\sum_{i=1}^n \hspace{-0.5mm}||\hspace{-0.5mm}\sum_{\ell=1}^d\sum_{j=1}^m K((s_i,a_i),(\hat s_\ell,\hat a_\ell)) W^{MP}_{\ell j}\phi(c_j)\hspace{-0.6mm} - \hspace{-0.6mm}\phi(s'_i) ||^2_\cF.\nn
 \end{align}
-Given the next basis element, each new weight $\bw_\ell$ can be found in closed form, and so each addition of a (basis,weight) pair requires a sweep over all candidate basis points. There are some non-standard aspects of the application of matching pursuit to optimize $\bW^{CMP}$ and details are included in Appendix~\ref{MatchingPursuit}, where we demonstrate for instance that $\cF$ can be an infinite-dimensional feature space of an RKHS and yet we can still perform matching pursuit efficiently. The greedy incremental approach is suited to the RL setting since we interact with the system to gather new data, which is then explored by matching pursuit to discover new basis functions, but we do not sweep over the full data set at each iteration (see Algorithm~\ref{PIwCMEfeatures} for details).
+Given the next basis element, each new weight $\bw_\ell$ can be found in closed form, and so each addition of a (basis,weight) pair requires a sweep over all candidate basis points. There are some non-standard aspects of the application of matching pursuit to optimize $\bW^{CMP}$ and details are included in supplementary material \citep{\supplementary}, where we demonstrate for instance that $\cF$ can be an infinite-dimensional feature space of an RKHS and yet we can still perform matching pursuit efficiently. The greedy incremental approach is suited to the RL setting since we interact with the system to gather new data, which is then explored by matching pursuit to discover new basis functions, but we do not sweep over the full data set at each iteration (see Algorithm~\ref{PIwCMEfeatures} for details).
 
 Once matching pursuit has found the basis $\cB$ we ``backfit'' the weights by performing RKHS-regularized least-squares in the primal,
 \begin{align}
@@ -561,7 +562,7 @@ Our first experiments are the well-known cart-pole and mountain-car benchmark MD
 
 \subsubsection{Simulated Quadrocopter Navigation}
 
-The third experiment is a simulated Quadrocopter navigation task which uses a simulator \citep{denardi2013rn} calibrated to model the dynamics of a Pelican\texttrademark\  platform. This is a higher dimensional problem, $\cS\subset\R^{13}$ (but effectively reduced to 6-dimensions by the choice of state kernel), $s=(x,y,z,\theta\,\phi,\psi,\dot{x},\dot{y},\dot{z},\dot{\theta},\dot{\phi},\dot{\psi},F)$ which consists of platform position $(x,y,z)\in\R^3$, roll, pitch and yaw $(\theta,\phi,\psi)\in\R^3$, associated time derivatives, and thrust $F$ applied to the rotors. The action set is a discretization of a 2-dimensional rectangle into 81 actions which represent desired velocity vectors in the $(x,y)$ plane (desired $z$ velocity is fixed at zero). An internal PID controller translates these desired velocities into low level commands issued to the rotors in attempt to attain those velocities. This creates complex dynamics for the system. The platform is initialized at position $(0,0,-50)$, a target location is defined at coordinates $x_{targ} = (5,5)$ and we define $r(s,a)=e^{-\frac{1}{50}||x_{targ}-s_{xy}||^{2}}$.
+The third experiment is a simulated Quadrocopter navigation task which uses a simulator \citep{denardi2013rn} calibrated to model the dynamics of a Pelican\texttrademark\  platform. This is a higher dimensional problem, $\cS\subset\R^{13}$ (but effectively reduced to 6-dimensions by the choice of state kernel), $s=(x,y,z,\theta\,\phi,\psi,\dot{x},\dot{y},\dot{z},\dot{\theta},\dot{\phi},\dot{\psi},F)$ which consists of platform position $(x,y,z)\in\R^3$, roll, pitch and yaw $(\theta,\phi,\psi)\in\R^3$, associated time derivatives, and thrust $F$ applied to the rotors. The action set is a discretization of a 2-dimensional rectangle into 81 actions which represent desired velocity vectors in the $(x,y)$ plane (desired $z$ velocity is fixed at zero). An internal PID controller translates these desired velocities into low level commands issued to the rotors in attempt to attain those velocities. This creates complex dynamics for the system. The platform is initialized at position $(0,0,-50)$, a target location is defined at coordinates $x_{targ} = (5,5)$ and we define $r(s,a)=e^{-\frac{1}{25}||x_{targ}-s_{xy}||^{2}}$.
 
 On this task the compressed CME method is able to learn a near optimal policy, accelerating before hovering around the target point to collect reward. Both least-squares methods out performed the KBRL method, and planning for the compressed CME approach is significantly more efficient. Compression to a finite pseudo-MDP of size 100-150 (from a total of 2400 data points over 12 iterations) was achieved. Results are shown in Figure~\ref{Quadfigs}.
 
@@ -734,7 +735,8 @@ The state kernel is a Gaussian $L(s,s') = \exp\left({\frac{-1}{2\sigma_{\cS}^2}(
 \end{align}
 with $\bM_{\cS\times\cA} =diag(\bone /5,\bone/10^5 ,\bone,\bone/10^5,0,  \bone/100)$. The output feature map $\phi(s) = L(s,\cdot)$ with $\sigma_{\cS} = 1$ (chosen by informal search). During model learning we performed 5-fold cross validation over a range of 10 bandwidths in the range $[0.01,5]$ to optimize $\sigma_{\cS\times\cA}$. For the compressed CME the tolerance of the compression set selection was set to $\delta = 0.1$, i.e. we use a $\delta$-lossy compression set $\cC$ with $\delta=0.1$.
 
-
+%supplementary below...
+\iffalse
 
 \clearpage
 
@@ -814,5 +816,6 @@ is minimized w.r.t $\psi^{\rm new}(\cdot)\in\cG$ and $\bbb^{\rm new}\in\R^p$. Bu
 \end{align}
 is minimized w.r.t. $\psi^{\rm new}(\cdot)\in\cG$ and $b^{\rm new}\in\cF$. i.e. performing matching pursuit on the low dimensional residues is an equivalent problem up to approximation error of the Cholesky decomposition and the same features will be returned if this decomposition is accurate.  In this way $d_{\rm new}$ new features can be added in time $O(d_{\rm new} p|\cG||\cD|)$, where $p$ is the rank of the incomplete Cholesky decomposition. In our experiments $p$ was set to $p=200$ by computational budget and the kernel approximation was found to be almost perfect.
 
+\fi
 
 \end{document}
